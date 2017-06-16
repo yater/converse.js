@@ -1,32 +1,37 @@
-*~
-.sw?
-*.mo
 *.kpf
-.*.sw?
+*.mo
+*.pyc
+*~
 .*.cfg
-.hg/
+.*.sw?
 .bzr/
-.svn/
+.hg/
+.idea
 .project
 .pydevproject
-.idea
 .su?
+.su?
+.svn/
+.sw?
 builds/*
 
 analytics.js
 inverse-analytics.js
 
 # python/buildout
-eggs
+*.egg-info
+*.pyc
 .Python
 build
+converse.js.egg-info/
+eggs
 parts
-*.pyc
-*.egg-info
+parts
 
 dev-jc.html
 inverse-dev.html
 inverse-dev-jc.html
+
 converse-logs/*.html
 
 # Ruby/Sass/Bundler
