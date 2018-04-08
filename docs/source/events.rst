@@ -34,8 +34,8 @@ For more info on how to use (or add promises), you can read the
 Below we will now list all events and also specify whether they are available
 as promises.
 
-List of Events (and promises)
------------------------------
+List of global events (and promises)
+------------------------------------
 
 Hooking into events that Converse.js emits is a great way to extend or
 customize its functionality.
