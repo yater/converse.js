@@ -42,7 +42,7 @@
         dependencies: ["converse-chatview", "converse-controlbox", "converse-muc", "converse-muc-views", "converse-headline"],
 
         enabled (_converse) {
-            return _converse.view_mode == 'overlayed';
+            return _converse.settings.get('view_mode') == 'overlayed';
         },
 
         overrides: {

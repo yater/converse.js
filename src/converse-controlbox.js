@@ -406,8 +406,8 @@
                     this.render();
                     _.forEach(this.el.querySelectorAll('[data-title]'), (el) => {
                         const popover = new bootstrap.Popover(el, {
-                            'trigger': _converse.view_mode === 'mobile' && 'click' || 'hover',
-                            'dismissible': _converse.view_mode === 'mobile' && true || false,
+                            'trigger': _converse.settings.get('view_mode') === 'mobile' && 'click' || 'hover',
+                            'dismissible': _converse.settings.get('view_mode') === 'mobile' && true || false,
                             'container': _converse.chatboxviews.el
                         })
                     });
@@ -465,9 +465,10 @@
                     if (!this.validate()) { return; }
 
                     const form_data = new FormData(ev.target);
-                    _converse.trusted = form_data.get('trusted');
-                    _converse.storage = form_data.get('trusted') ? 'local' : 'session';
-
+                    _converse.settings.save({
+                        'trusted': form_data.get('trusted'),
+                        'storage': form_data.get('trusted') ? 'local' : 'session'
+                    });
                     let jid = form_data.get('jid');
                     if (_converse.locked_domain) {
                         jid = Strophe.escapeNode(jid) + '@' + _converse.locked_domain;
@@ -578,7 +579,7 @@
             });
 
             _converse.on('clearSession', () => {
-                if (_converse.trusted) {
+                if (_converse.settings.get('trusted')) {
                     const chatboxes = _.get(_converse, 'chatboxes', null);
                     if (!_.isNil(chatboxes)) {
                         const controlbox = chatboxes.get('controlbox');

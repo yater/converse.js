@@ -71,7 +71,7 @@
             };
 
             _converse.isMessageToHiddenChat = function (message) {
-                if (_.includes(['mobile', 'fullscreen', 'embedded'], _converse.view_mode)) {
+                if (_.includes(['mobile', 'fullscreen', 'embedded'], _converse.settings.get('view_mode'))) {
                     const jid = Strophe.getBareJidFromJid(message.getAttribute('from'));
                     const model = _converse.chatboxes.get(jid);
                     if (!_.isNil(model)) {
@@ -138,7 +138,7 @@
                 const full_from_jid = message.getAttribute('from'),
                       from_jid = Strophe.getBareJidFromJid(full_from_jid);
                 if (message.getAttribute('type') === 'headline') {
-                    if (!_.includes(from_jid, '@') || _converse.allow_non_roster_messaging) {
+                    if (!_.includes(from_jid, '@') || _converse.get('allow_non_roster_messaging')) {
                         title = __("Notification from %1$s", from_jid);
                     } else {
                         return;
@@ -159,7 +159,7 @@
                     if (!_.isUndefined(roster_item)) {
                         title = __("%1$s says", roster_item.getDisplayName());
                     } else {
-                        if (_converse.allow_non_roster_messaging) {
+                        if (_converse.get('allow_non_roster_messaging')) {
                             title = __("%1$s says", from_jid);
                         } else {
                             return;

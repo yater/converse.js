@@ -722,7 +722,7 @@
                                 _converse.root.appendChild(el);
                             }
                         }
-                        if (_.includes(['mobile', 'fullscreen'], _converse.view_mode)) {
+                        if (_.includes(['mobile', 'fullscreen'], _converse.settings.get('view_mode'))) {
                             el.classList.add('fullscreen');
                         }
                         el.innerHTML = '';
@@ -735,7 +735,7 @@
                 initialize () {
                     this.model.on("add", this.onChatBoxAdded, this);
                     this.model.on("destroy", this.removeChat, this);
-                    this.el.classList.add(`converse-${_converse.view_mode}`);
+                    this.el.classList.add(`converse-${_converse.settings.get('view_mode')}`);
                     this.render();
                 },
 

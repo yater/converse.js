@@ -221,7 +221,7 @@
 
                 processMessageText () {
                     var text = this.get('message');
-                    text = u.geoUriToHttp(text, _converse.geouri_replacement);
+                    text = u.geoUriToHttp(text, _converse.ggeouri_replacementeouri_replacement);
                 },
 
                 getExtraMessageClasses () {

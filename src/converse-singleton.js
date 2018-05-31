@@ -46,7 +46,7 @@
             ChatBoxes: {
 
                 chatBoxMayBeShown (chatbox) {
-                    if (_.includes(['mobile', 'fullscreen', 'embedded'], this.__super__._converse.view_mode)) {
+                    if (_.includes(['mobile', 'fullscreen', 'embedded'], this.__super__._converse.settings.get('view_mode'))) {
                         return !chatbox.get('hidden');
                     } else {
                         return this.__super__.chatBoxMayBeShown.apply(this, arguments);
@@ -55,7 +55,7 @@
 
                 createChatBox (jid, attrs) {
                     /* Make sure new chat boxes are hidden by default. */
-                    if (_.includes(['mobile', 'fullscreen', 'embedded'], this.__super__._converse.view_mode)) {
+                    if (_.includes(['mobile', 'fullscreen', 'embedded'], this.__super__._converse.settings.get('view_mode'))) {
                         attrs = attrs || {};
                         attrs.hidden = true;
                     }
@@ -65,7 +65,7 @@
 
             ChatBoxView: {
                 shouldShowOnTextMessage () {
-                    if (_.includes(['mobile', 'fullscreen', 'embedded'], this.__super__._converse.view_mode)) {
+                    if (_.includes(['mobile', 'fullscreen', 'embedded'], this.__super__._converse.settings.get('view_mode'))) {
                         return false;
                     } else { 
                         return this.__super__.shouldShowOnTextMessage.apply(this, arguments);
@@ -77,7 +77,7 @@
                      * time. So before opening a chat, we make sure all other
                      * chats are hidden.
                      */
-                    if (_.includes(['mobile', 'fullscreen', 'embedded'], this.__super__._converse.view_mode)) {
+                    if (_.includes(['mobile', 'fullscreen', 'embedded'], this.__super__._converse.settings.get('view_mode'))) {
                         _.each(this.__super__._converse.chatboxviews.xget(this.model.get('id')), hideChat);
                         this.model.set('hidden', false);
                     }
@@ -87,7 +87,7 @@
 
             ChatRoomView: {
                 show (focus) {
-                    if (_.includes(['mobile', 'fullscreen', 'embedded'], this.__super__._converse.view_mode)) {
+                    if (_.includes(['mobile', 'fullscreen', 'embedded'], this.__super__._converse.settings.get('view_mode'))) {
                         _.each(this.__super__._converse.chatboxviews.xget(this.model.get('id')), hideChat);
                         this.model.set('hidden', false);
                     }

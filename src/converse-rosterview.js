@@ -821,7 +821,7 @@
                     }
                     this.filter_view.showOrHide();
                     return this;
-                }, _converse.animate ? 100 : 0),
+                }, _converse.get('animate') ? 100 : 0),
 
                 filter (query, type) {
                     // First we make sure the filter is restored to its

@@ -13,7 +13,7 @@
     converse.plugins.add('converse-embedded', {
 
         enabled (_converse) {
-            return _converse.view_mode === 'embedded';
+            return _converse.settings.get('view_mode') === 'embedded';
         },
 
         initialize () {

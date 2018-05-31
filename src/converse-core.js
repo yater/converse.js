@@ -181,12 +181,12 @@
         if (level === Strophe.LogLevel.ERROR) {
             logger.error(`${prefix} ERROR: ${message}`, style);
         } else if (level === Strophe.LogLevel.WARN) {
-            if (_converse.debug) {
+            if (_converse.settings.get('debug')) {
                 logger.warn(`${prefix} ${moment().format()} WARNING: ${message}`, style);
             }
         } else if (level === Strophe.LogLevel.FATAL) {
             logger.error(`${prefix} FATAL: ${message}`, style);
-        } else if (_converse.debug) {
+        } else if (_converse.settings.get('debug')) {
             if (level === Strophe.LogLevel.DEBUG) {
                 logger.debug(`${prefix} ${moment().format()} DEBUG: ${message}`, style);
             } else {
@@ -227,6 +227,20 @@
         _converse.promises[promise] = u.getResolveablePromise();
     }
 
+    // Instance level constants
+    _converse.TIMEOUTS = { // Set as module attr so that we can override in tests.
+        'PAUSED':     10000,
+        'INACTIVE':   90000
+    };
+
+    // XEP-0085 Chat states
+    // http://xmpp.org/extensions/xep-0085.html
+    _converse.INACTIVE = 'inactive';
+    _converse.ACTIVE = 'active';
+    _converse.COMPOSING = 'composing';
+    _converse.PAUSED = 'paused';
+    _converse.GONE = 'gone';
+
     _converse.emit = function (name) {
         /* Event emitter and promise resolver */
         _converse.trigger.apply(this, arguments);
@@ -236,15 +250,76 @@
         }
     };
 
-    _converse.router = new Backbone.Router();
+    // Converse has two kinds of settings.
+    //
+    // Both kinds of settings can be set when calling converse.initialize.
+    //
+    // The core settings (or instance settings), which are set directly on the
+    // _converse object and which we don't expect to change after
+    // initialization.
+    //
+    // Then there are the app settings, which are stored in the AppSettings
+    // model. These settings are cached and may be overridden during runtime.
+
+    // We now declare the defaults for the instance settings.
+    _converse.default_settings = {
+        'authentication': 'login', // Available values are "login", "prebind", "anonymous" and "external".
+        'auto_login': false, // Currently only used in connection with anonymous login
+        'auto_reconnect': true,
+        'blacklisted_plugins': [],
+        'connection_options': {},
+        'credentials_url': null, // URL from where login credentials can be fetched
+        'expose_rid_and_sid': false,
+        'geouri_regex': /https:\/\/www.openstreetmap.org\/.*#map=[0-9]+\/([\-0-9.]+)\/([\-0-9.]+)\S*/g,
+        'geouri_replacement': 'https://www.openstreetmap.org/?mlat=$1&mlon=$2#map=18/$1/$2',
+        'jid': undefined,
+        'keepalive': true,
+        'locales_url': 'locale/{{{locale}}}/LC_MESSAGES/converse.json',
+        'locales': [
+            'af', 'ar', 'bg', 'ca', 'de', 'es', 'eu', 'en', 'fr', 'he',
+            'hu', 'id', 'it', 'ja', 'nb', 'nl',
+            'pl', 'pt_BR', 'ru', 'tr', 'uk', 'zh_CN', 'zh_TW'
+        ],
+        'message_carbons': true,
+        'password': undefined,
+        'prebind_url': null,
+        'rid': undefined,
+        'sid': undefined,
+        'root': window.document,
+        'storage': 'session',
+        'strict_plugin_dependencies': false,
+        'whitelisted_plugins': []
+    };
+
+
+    _converse.AppSettings = Backbone.Model.extend({
+        defaults () {
+            return {
+                'allow_non_roster_messaging': false,
+                'animate': true,
+                'auto_away': 0, // Seconds after which user status is set to 'away'
+                'auto_xa': 0, // Seconds after which user status is set to 'xa'
+                'bosh_service_url': undefined,
+                'csi_waiting_time': 0, // Support for XEP-0352. Seconds before client is considered idle and CSI is sent out.
+                'debug': false,
+                'default_state': 'online',
+                'nickname': undefined, // XXX: looks like this is not being used?
+                'priority': 0,
+                'trusted': true,
+                'view_mode': 'overlayed', // Choices are 'overlayed', 'fullscreen', 'mobile'
+                'websocket_url': undefined
+            };
+        }
+    });
 
 
     _converse.initialize = function (settings, callback) {
         "use strict";
-        settings = !_.isUndefined(settings) ? settings : {};
         const init_promise = u.getResolveablePromise();
 
         _.each(PROMISES, addPromise);
+
+        _converse.router = new Backbone.Router();
 
         if (!_.isUndefined(_converse.connection)) {
             // Looks like _converse.initialized was called again without logging
@@ -276,69 +351,28 @@
             unloadevent = 'unload';
         }
 
-        // Instance level constants
-        this.TIMEOUTS = { // Set as module attr so that we can override in tests.
-            'PAUSED':     10000,
-            'INACTIVE':   90000
-        };
+        // Apply default settings
+        // ----------------------
+        settings = !_.isUndefined(settings) ? settings : {};
 
-        // XEP-0085 Chat states
-        // http://xmpp.org/extensions/xep-0085.html
-        this.INACTIVE = 'inactive';
-        this.ACTIVE = 'active';
-        this.COMPOSING = 'composing';
-        this.PAUSED = 'paused';
-        this.GONE = 'gone';
+        const instance_keys = _.keys(_converse.default_settings);
+        const instance_settings = _.pick(settings, instance_keys);
+        _.assignIn(_converse, instance_settings);
 
-        // Default configuration values
-        // ----------------------------
-        this.default_settings = {
-            allow_non_roster_messaging: false,
-            animate: true,
-            authentication: 'login', // Available values are "login", "prebind", "anonymous" and "external".
-            auto_away: 0, // Seconds after which user status is set to 'away'
-            auto_login: false, // Currently only used in connection with anonymous login
-            auto_reconnect: true,
-            auto_xa: 0, // Seconds after which user status is set to 'xa'
-            blacklisted_plugins: [],
-            bosh_service_url: undefined,
-            connection_options: {},
-            credentials_url: null, // URL from where login credentials can be fetched
-            csi_waiting_time: 0, // Support for XEP-0352. Seconds before client is considered idle and CSI is sent out.
-            debug: false,
-            default_state: 'online',
-            expose_rid_and_sid: false,
-            geouri_regex: /https:\/\/www.openstreetmap.org\/.*#map=[0-9]+\/([\-0-9.]+)\/([\-0-9.]+)\S*/g,
-            geouri_replacement: 'https://www.openstreetmap.org/?mlat=$1&mlon=$2#map=18/$1/$2',
-            jid: undefined,
-            keepalive: true,
-            locales_url: 'locale/{{{locale}}}/LC_MESSAGES/converse.json',
-            locales: [
-                'af', 'ar', 'bg', 'ca', 'de', 'es', 'eu', 'en', 'fr', 'he',
-                'hu', 'id', 'it', 'ja', 'nb', 'nl',
-                'pl', 'pt_BR', 'ru', 'tr', 'uk', 'zh_CN', 'zh_TW'
-            ],
-            message_carbons: true,
-            nickname: undefined,
-            password: undefined,
-            prebind_url: null,
-            priority: 0,
-            rid: undefined,
-            root: window.document,
-            sid: undefined,
-            storage: 'session',
-            strict_plugin_dependencies: false,
-            trusted: true,
-            view_mode: 'overlayed', // Choices are 'overlayed', 'fullscreen', 'mobile'
-            websocket_url: undefined,
-            whitelisted_plugins: []
-        };
-        _.assignIn(this, this.default_settings);
-        // Allow only whitelisted configuration attributes to be overwritten
-        _.assignIn(this, _.pick(settings, _.keys(this.default_settings)));
+        // TODO: need to also fetch from browserStorage here, and need to
+        // figure out how to not overwrite browserStorage with settings passed
+        // in via converse.initialize
+        _converse.settings = new _converse.AppSettings();
 
-        if (this.authentication === _converse.ANONYMOUS) {
-            if (this.auto_login && !this.jid) {
+        const id = b64_sha1(`converse.appsettings-${_converse.bare_jid}`);
+        _converse.xmppstatus.browserStorage = new Backbone.BrowserStorage[_converse.storage](id);
+        _converse.xmppstatus.fetch();
+
+        const app_settings = _.omit(settings, instance_keys);
+        _converse.settings.save(app_settings);
+
+        if (_converse.authentication === _converse.ANONYMOUS) {
+            if (_converse.auto_login && !_converse.jid) {
                 throw new Error("Config Error: you need to provide the server's " +
                       "domain via the 'jid' option when using anonymous " +
                       "authentication with auto_login.");
@@ -369,7 +403,6 @@
 
         // Module-level functions
         // ----------------------
-
         this.generateResource = () => `/converse.js-${Math.floor(Math.random()*139749528).toString()}`;
 
         this.sendCSI = function (stat) {
@@ -401,7 +434,7 @@
                 _converse.auto_changed_status = false;
                 // XXX: we should really remember the original state here, and
                 // then set it back to that...
-                _converse.xmppstatus.set('status', _converse.default_state);
+                _converse.xmppstatus.set('status', _converse.settings.get('default_state'));
             }
         };
 
@@ -416,18 +449,18 @@
             }
             const stat = _converse.xmppstatus.get('status');
             _converse.idle_seconds++;
-            if (_converse.csi_waiting_time > 0 &&
-                    _converse.idle_seconds > _converse.csi_waiting_time &&
+            if (_converse.settings.get('csi_waiting_time') > 0 &&
+                    _converse.idle_seconds > _converse.settings.get('csi_waiting_time') &&
                     !_converse.inactive) {
                 _converse.sendCSI(_converse.INACTIVE);
             }
-            if (_converse.auto_away > 0 &&
-                    _converse.idle_seconds > _converse.auto_away &&
+            if (_converse.settings.get('auto_away') > 0 &&
+                    _converse.idle_seconds > _converse.settings.get('auto_away') &&
                     stat !== 'away' && stat !== 'xa' && stat !== 'dnd') {
                 _converse.auto_changed_status = true;
                 _converse.xmppstatus.set('status', 'away');
-            } else if (_converse.auto_xa > 0 &&
-                    _converse.idle_seconds > _converse.auto_xa &&
+            } else if (_converse.settings.get('auto_xa') > 0 &&
+                    _converse.idle_seconds > _converse.settings.get('auto_xa') &&
                     stat !== 'xa' && stat !== 'dnd') {
                 _converse.auto_changed_status = true;
                 _converse.xmppstatus.set('status', 'xa');
@@ -438,7 +471,9 @@
             /* Set an interval of one second and register a handler for it.
              * Required for the auto_away, auto_xa and csi_waiting_time features.
              */
-            if (_converse.auto_away < 1 && _converse.auto_xa < 1 && _converse.csi_waiting_time < 1) {
+            if (_converse.settings.get('auto_away') < 1 &&
+                    _converse.settings.get('auto_xa') < 1 &&
+                    _converse.settings.get('csi_waiting_time') < 1) {
                 // Waiting time of less then one second means features aren't used.
                 return;
             }
@@ -591,8 +626,8 @@
         };
 
         this.incrementMsgCounter = function () {
-            this.msg_counter += 1;
-            const unreadMsgCount = this.msg_counter;
+            _converse.msg_counter += 1;
+            const unreadMsgCount = _converse.msg_counter;
             let title = document.title;
             if (_.isNil(title)) {
                 return;
@@ -643,7 +678,7 @@
         };
 
         this.clearSession = function () {
-            if (!_converse.trusted) {
+            if (!_converse.settings.get('trusted')) {
                 window.localStorage.clear();
                 window.sessionStorage.clear();
             } else if (!_.isUndefined(this.session) && this.session.browserStorage) {
@@ -798,11 +833,10 @@
 
 
         this.XMPPStatus = Backbone.Model.extend({
-
             defaults () {
                 return {
                     "jid": _converse.bare_jid,
-                    "status":  _converse.default_state,
+                    "status":  _converse.settings.get('default_state'),
                 }
             },
 
@@ -827,7 +861,7 @@
 
             constructPresence (type, status_message) {
                 let presence;
-                type = _.isString(type) ? type : (this.get('status') || _converse.default_state);
+                type = _.isString(type) ? type : (this.get('status') || _converse.settings.get('default_state'));
                 status_message = _.isString(status_message) ? status_message : this.get('status_message');
                 // Most of these presence types are actually not explicitly sent,
                 // but I add all of them here for reference and future proofing.
@@ -864,11 +898,11 @@
             Strophe.log = function (level, msg) {
                 _converse.log(msg, level);
             };
-            if (this.debug) {
-                this.connection.xmlInput = function (body) {
+            if (_converse.settings.get('debug')) {
+                _converse.connection.xmlInput = function (body) {
                     _converse.log(body.outerHTML, Strophe.LogLevel.DEBUG, 'color: darkgoldenrod');
                 };
-                this.connection.xmlOutput = function (body) {
+                _converse.connection.xmlOutput = function (body) {
                     _converse.log(body.outerHTML, Strophe.LogLevel.DEBUG, 'color: darkcyan');
                 };
             }
@@ -983,7 +1017,7 @@
                 // or credentials fetching via HTTP
                 this.autoLogin(credentials);
             } else if (this.auto_login) {
-                if (this.credentials_url) {
+                if (_converse.credentials_url) {
                     this.fetchLoginCredentials().then(
                         this.autoLogin.bind(this),
                         this.autoLogin.bind(this)
@@ -1010,7 +1044,8 @@
                 // so we set them on the converse object.
                 this.jid = credentials.jid;
             }
-            if (this.authentication === _converse.ANONYMOUS || this.authentication === _converse.EXTERNAL) {
+            if (_converse.authentication === _converse.ANONYMOUS ||
+                    _converse.authentication === _converse.EXTERNAL) {
                 if (!this.jid) {
                     throw new Error("Config Error: when using anonymous login " +
                         "you need to provide the server's domain via the 'jid' option. " +
@@ -1021,7 +1056,7 @@
                     this.connection.reset();
                 }
                 this.connection.connect(this.jid.toLowerCase(), null, this.onConnectStatusChanged);
-            } else if (this.authentication === _converse.LOGIN) {
+            } else if (_converse.authentication === _converse.LOGIN) {
                 const password = _.isNil(credentials) ? (_converse.connection.pass || this.password) : credentials.password;
                 if (!password) {
                     if (this.auto_login) {
@@ -1048,10 +1083,10 @@
         this.logIn = function (credentials, reconnecting) {
             // We now try to resume or automatically set up a new session.
             // Otherwise the user will be shown a login form.
-            if (this.authentication === _converse.PREBIND) {
-                this.attemptPreboundSession(reconnecting);
+            if (_converse.authentication === _converse.PREBIND) {
+                _converse.attemptPreboundSession(reconnecting);
             } else {
-                this.attemptNonPreboundSession(credentials, reconnecting);
+                _converse.attemptNonPreboundSession(credentials, reconnecting);
             }
         };
 
@@ -1059,14 +1094,14 @@
             /* Creates a new Strophe.Connection instance if we don't already have one.
              */
             if (!this.connection) {
-                if (!this.bosh_service_url && ! this.websocket_url) {
+                if (!_converse.settings.get('bosh_service_url') && ! _converse.settings.get('websocket_url')) {
                     throw new Error("initConnection: you must supply a value for either the bosh_service_url or websocket_url or both.");
                 }
-                if (('WebSocket' in window || 'MozWebSocket' in window) && this.websocket_url) {
-                    this.connection = new Strophe.Connection(this.websocket_url, this.connection_options);
-                } else if (this.bosh_service_url) {
+                if (('WebSocket' in window || 'MozWebSocket' in window) && _converse.settings.get('websocket_url')) {
+                    this.connection = new Strophe.Connection(_converse.settings.get('websocket_url'), this.connection_options);
+                } else if (_converse.settings.get('bosh_service_url')) {
                     this.connection = new Strophe.Connection(
-                        this.bosh_service_url,
+                        _converse.settings.get('bosh_service_url'),
                         _.assignIn(this.connection_options, {'keepalive': this.keepalive})
                     );
                 } else {
@@ -1106,7 +1141,7 @@
             const whitelist = _converse.core_plugins.concat(
                 _converse.whitelisted_plugins);
 
-            if (_converse.view_mode === 'embedded') {
+            if (_converse.settings.get('view_mode') === 'embedded') {
                 _.forEach([ // eslint-disable-line lodash/prefer-map
                     "converse-bookmarks",
                     "converse-controlbox",
@@ -1219,23 +1254,8 @@
         },
         'settings': {
             'update' (settings) {
-                u.merge(_converse.default_settings, settings);
-                u.merge(_converse, settings);
-                u.applyUserSettings(_converse, settings, _converse.user_settings);
-            },
-            'get' (key) {
-                if (_.includes(_.keys(_converse.default_settings), key)) {
-                    return _converse[key];
-                }
-            },
-            'set' (key, val) {
-                const o = {};
-                if (_.isObject(key)) {
-                    _.assignIn(_converse, _.pick(key, _.keys(_converse.default_settings)));
-                } else if (_.isString("string")) {
-                    o[key] = val;
-                    _.assignIn(_converse, _.pick(o, _.keys(_converse.default_settings)));
-                }
+                const user_settings = _.pick(_converse.user_settings, _.keys(settings));
+                _converse.settings.save(_.extend(settings, user_settings));
             }
         },
         'promises': {

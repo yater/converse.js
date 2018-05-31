@@ -108,14 +108,14 @@
             // Refer to docs/source/configuration.rst for explanations of these
             // configuration settings.
             _converse.api.settings.update({
-                allow_muc: true,
-                allow_muc_invitations: true,
-                auto_join_on_invite: false,
-                auto_join_rooms: [],
-                muc_domain: undefined,
-                muc_history_max_stanzas: undefined,
-                muc_instant_rooms: true,
-                muc_nickname_from_jid: false
+                'allow_muc': true,
+                'allow_muc_invitations': true,
+                'auto_join_on_invite': false,
+                'auto_join_rooms': [],
+                'muc_domain': undefined,
+                'muc_history_max_stanzas': undefined,
+                'muc_instant_rooms': true,
+                'muc_nickname_from_jid': false
             });
             _converse.api.promises.add(['roomsAutoJoined']);
 
