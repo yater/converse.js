@@ -833,7 +833,7 @@
                 },
 
                 verifyRoles (roles) {
-                    const me = this.model.occupants.findWhere({'jid': _converse.bare_jid});
+                    const me = this.model.occupants.findWhere({'bare_jid': _converse.bare_jid});
                     if (!_.includes(roles, me.get('role'))) {
                         this.showErrorMessage(__(`Forbidden: you do not have the necessary role in order to do that.`))
                         return false;
@@ -842,7 +842,7 @@
                 },
 
                 verifyAffiliations (affiliations) {
-                    const me = this.model.occupants.findWhere({'jid': _converse.bare_jid});
+                    const me = this.model.occupants.findWhere({'bare_jid': _converse.bare_jid});
                     if (!_.includes(affiliations, me.get('affiliation'))) {
                         this.showErrorMessage(__(`Forbidden: you do not have the necessary affiliation in order to do that.`))
                         return false;
@@ -860,7 +860,7 @@
                         );
                         return false;
                     }
-                    if (!this.model.occupants.findWhere({'nick': args[0]}) && !this.model.occupants.findWhere({'jid': args[0]})) {
+                    if (!this.model.occupants.findWhere({'nick': args[0]}) && !this.model.occupants.findWhere({'bare_jid': args[0]})) {
                         this.showErrorMessage(__('Error: couldn\'t find a groupchat participant "%1$s"', args[0]));
                         return false;
                     }

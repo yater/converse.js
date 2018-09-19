@@ -341,8 +341,7 @@
                         // match.
                         return null;
                     }
-                    const occupant = this.occupants.findOccupant({'nick': longest_match}) ||
-                            this.occupants.findOccupant({'jid': longest_match});
+                    const occupant = this.occupants.findWhere({'nick': longest_match});
                     if (!occupant) {
                         return null;
                     }
@@ -352,8 +351,8 @@
                         'value': longest_match,
                         'type': 'mention'
                     };
-                    if (occupant.get('jid')) {
-                        obj.uri = `xmpp:${occupant.get('jid')}`
+                    if (occupant.get('bare_jid')) {
+                        obj.uri = `xmpp:${occupant.get('bare_jid')}`
                     }
                     return obj;
                 },
@@ -873,26 +872,34 @@
                     if (data.type === 'error' || (!data.jid && !data.nick)) {
                         return true;
                     }
-                    const occupant = this.occupants.findOccupant(data);
+                    const occupant = this.occupants.findWhere({'nick': data.nick});
                     if (data.type === 'unavailable' && occupant) {
+                        // We only destroy the occupant if this is not a nickname change operation.
+                        // and if they're not on the member lists.
                         if (!_.includes(data.states, converse.MUC_NICK_CHANGED_CODE) && !occupant.isMember()) {
-                            // We only destroy the occupant if this is not a nickname change operation.
-                            // and if they're not on the member lists.
                             // Before destroying we set the new data, so
                             // that we can show the disconnection message.
-                            occupant.set(data);
+                            // TODO: see whether we need to check for multiple jids
+                            const attributes = _.extend(data, {
+                                'bare_jid': data.jid ? Strophe.getBareJidFromJid(data.jid) : undefined,
+                                'jids': data.jid ? [data.jid] : []
+                            });
+                            occupant.set(attributes);
                             occupant.destroy();
                             return;
                         }
                     }
-                    const jid = Strophe.getBareJidFromJid(data.jid);
-                    const attributes = _.extend(data, {
-                        'jid': jid ? jid : undefined,
-                        'resource': data.jid ? Strophe.getResourceFromJid(data.jid) : undefined
-                    });
                     if (occupant) {
+                        const attributes = _.extend(data, {
+                            'bare_jid': data.jid ? Strophe.getBareJidFromJid(data.jid) : undefined,
+                            'jids': data.jid ? _.concat(occupant.get('jids'), data.jid) : []
+                        });
                         occupant.save(attributes);
                     } else {
+                        const attributes = _.extend(data, {
+                            'bare_jid': data.jid ? Strophe.getBareJidFromJid(data.jid) : undefined,
+                            'jids': data.jid ? [data.jid] : []
+                        });
                         this.occupants.create(attributes);
                     }
                 },
@@ -1113,7 +1120,8 @@
             _converse.ChatRoomOccupant = Backbone.Model.extend({
 
                 defaults: {
-                    'show': 'offline'
+                    'show': 'offline',
+                    'jids': []
                 },
 
                 initialize (attributes) {
@@ -1175,19 +1183,14 @@
                                         !f.includes(m.get('jid'), new_jids);
                               });
 
-                        _.each(removed_members, (occupant) => {
-                            if (occupant.get('jid') === _converse.bare_jid) { return; }
+                        _.each(removed_members, occupant => {
+                            if (occupant.get('bare_jid') === _converse.bare_jid) { return; }
                             if (occupant.get('show') === 'offline') {
                                 occupant.destroy();
                             }
                         });
-                        _.each(new_members, (attrs) => {
-                            let occupant;
-                            if (attrs.jid) {
-                                occupant = this.findOccupant({'jid': attrs.jid});
-                            } else {
-                                occupant = this.findOccupant({'nick': attrs.nick});
-                            }
+                        _.each(new_members, attrs => {
+                            const occupant = this.findWhere({'nick': attrs.nick});
                             if (occupant) {
                                 occupant.save(attrs);
                             } else {
@@ -1195,22 +1198,6 @@
                             }
                         });
                     }).catch(_.partial(_converse.log, _, Strophe.LogLevel.ERROR));
-                },
-
-                findOccupant (data) {
-                    /* Try to find an existing occupant based on the passed in
-                     * data object.
-                     *
-                     * If we have a JID, we use that as lookup variable,
-                     * otherwise we use the nick. We don't always have both,
-                     * but should have at least one or the other.
-                     */
-                    const jid = Strophe.getBareJidFromJid(data.jid);
-                    if (jid !== null) {
-                        return this.where({'jid': jid}).pop();
-                    } else {
-                        return this.where({'nick': data.nick}).pop();
-                    }
                 }
             });
 
@@ -1218,7 +1205,7 @@
             _converse.RoomsPanelModel = Backbone.Model.extend({
                 defaults: {
                     'muc_domain': '',
-                },
+                }
             });
 
 

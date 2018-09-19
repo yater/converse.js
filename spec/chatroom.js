@@ -12,7 +12,8 @@
           Backbone = converse.env.Backbone,
           u = converse.env.utils;
 
-    return describe("Chatrooms", function () {
+    describe("Chatrooms", function () {
+
         describe("The \"rooms\" API", function () {
 
             it("has a method 'close' which closes rooms by JID or all rooms when called with no arguments",
@@ -1150,6 +1151,41 @@
                 }).catch(_.partial(console.error, _));
             }));
 
+            it("can handle multi-session nicknames",
+                mock.initConverseWithPromises(null, ['rosterGroupsFetched'], {}, function (done, _converse) {
+
+                test_utils.openAndEnterChatRoom(_converse, 'coven', 'chat.shakespeare.lit', 'oldhag').then(() => {
+                    let presence = $pres({
+                        'to':'dummy@localhost/pda',
+                        'from':"coven@chat.shakespeare.lit/my1stNick"
+                    }).c('x').attrs({xmlns:'http://jabber.org/protocol/muc#user'})
+                    .c('item').attrs({
+                        jid: 'someone@localhost/foo',
+                        role: 'moderator',
+                    });
+
+                    _converse.connection._dataRecv(test_utils.createRequest(presence));
+                    const view = _converse.chatboxviews.get('coven@chat.shakespeare.lit');
+                    let occupants = view.el.querySelector('.occupant-list').querySelectorAll('li .occupant-nick');
+                    expect(occupants.length).toBe(2);
+                    expect(occupants.pop().textContent.trim()).toBe("my1stNick");
+
+                    presence = $pres({
+                        'to':'dummy@localhost/pda',
+                        'from':"coven@chat.shakespeare.lit/my2ndNick"
+                    }).c('x').attrs({xmlns:'http://jabber.org/protocol/muc#user'})
+                    .c('item').attrs({
+                        jid: 'someone@localhost/bar',
+                        role: 'moderator',
+                    });
+                    _converse.connection._dataRecv(test_utils.createRequest(presence));
+                    occupants = view.el.querySelector('.occupant-list').querySelectorAll('li .occupant-nick');
+                    expect(occupants.length).toBe(3);
+                    expect(occupants.pop().textContent.trim()).toBe("my2ndNick");
+                    done();
+                });
+            }));
+
             it("escapes occupant nicknames when rendering them, to avoid JS-injection attacks",
                 mock.initConverseWithPromises(null, ['rosterGroupsFetched'], {}, function (done, _converse) {
 
@@ -1229,8 +1265,7 @@
                     .c('item').attrs({
                         jid: contact_jid,
                         role: 'visitor',
-                    }).up()
-                    .c('status').attrs({code:'110'}).nodeTree;
+                    });
                     _converse.connection._dataRecv(test_utils.createRequest(presence));
 
                     occupants = view.el.querySelector('.occupant-list').querySelectorAll('li');

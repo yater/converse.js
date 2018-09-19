@@ -68708,7 +68708,7 @@ var __WEBPACK_AMD_DEFINE_FACTORY__, __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_
 
         verifyRoles(roles) {
           const me = this.model.occupants.findWhere({
-            'jid': _converse.bare_jid
+            'bare_jid': _converse.bare_jid
           });
 
           if (!_.includes(roles, me.get('role'))) {
@@ -68721,7 +68721,7 @@ var __WEBPACK_AMD_DEFINE_FACTORY__, __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_
 
         verifyAffiliations(affiliations) {
           const me = this.model.occupants.findWhere({
-            'jid': _converse.bare_jid
+            'bare_jid': _converse.bare_jid
           });
 
           if (!_.includes(affiliations, me.get('affiliation'))) {
@@ -68744,7 +68744,7 @@ var __WEBPACK_AMD_DEFINE_FACTORY__, __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_
           if (!this.model.occupants.findWhere({
             'nick': args[0]
           }) && !this.model.occupants.findWhere({
-            'jid': args[0]
+            'bare_jid': args[0]
           })) {
             this.showErrorMessage(__('Error: couldn\'t find a groupchat participant "%1$s"', args[0]));
             return false;
@@ -70358,10 +70358,8 @@ function _arrayWithHoles(arr) { if (Array.isArray(arr)) return arr; }
             return null;
           }
 
-          const occupant = this.occupants.findOccupant({
+          const occupant = this.occupants.findWhere({
             'nick': longest_match
-          }) || this.occupants.findOccupant({
-            'jid': longest_match
           });
 
           if (!occupant) {
@@ -70375,8 +70373,8 @@ function _arrayWithHoles(arr) { if (Array.isArray(arr)) return arr; }
             'type': 'mention'
           };
 
-          if (occupant.get('jid')) {
-            obj.uri = `xmpp:${occupant.get('jid')}`;
+          if (occupant.get('bare_jid')) {
+            obj.uri = `xmpp:${occupant.get('bare_jid')}`;
           }
 
           return obj;
@@ -70980,30 +70978,41 @@ function _arrayWithHoles(arr) { if (Array.isArray(arr)) return arr; }
             return true;
           }
 
-          const occupant = this.occupants.findOccupant(data);
+          const occupant = this.occupants.findWhere({
+            'nick': data.nick
+          });
 
           if (data.type === 'unavailable' && occupant) {
+            // We only destroy the occupant if this is not a nickname change operation.
+            // and if they're not on the member lists.
             if (!_.includes(data.states, converse.MUC_NICK_CHANGED_CODE) && !occupant.isMember()) {
-              // We only destroy the occupant if this is not a nickname change operation.
-              // and if they're not on the member lists.
               // Before destroying we set the new data, so
               // that we can show the disconnection message.
-              occupant.set(data);
+              // TODO: see whether we need to check for multiple jids
+              const attributes = _.extend(data, {
+                'bare_jid': data.jid ? Strophe.getBareJidFromJid(data.jid) : undefined,
+                'jids': data.jid ? [data.jid] : []
+              });
+
+              occupant.set(attributes);
               occupant.destroy();
               return;
             }
           }
 
-          const jid = Strophe.getBareJidFromJid(data.jid);
-
-          const attributes = _.extend(data, {
-            'jid': jid ? jid : undefined,
-            'resource': data.jid ? Strophe.getResourceFromJid(data.jid) : undefined
-          });
-
           if (occupant) {
+            const attributes = _.extend(data, {
+              'bare_jid': data.jid ? Strophe.getBareJidFromJid(data.jid) : undefined,
+              'jids': data.jid ? _.concat(occupant.get('jids'), data.jid) : []
+            });
+
             occupant.save(attributes);
           } else {
+            const attributes = _.extend(data, {
+              'bare_jid': data.jid ? Strophe.getBareJidFromJid(data.jid) : undefined,
+              'jids': data.jid ? [data.jid] : []
+            });
+
             this.occupants.create(attributes);
           }
         },
@@ -71263,7 +71272,8 @@ function _arrayWithHoles(arr) { if (Array.isArray(arr)) return arr; }
       });
       _converse.ChatRoomOccupant = Backbone.Model.extend({
         defaults: {
-          'show': 'offline'
+          'show': 'offline',
+          'jids': []
         },
 
         initialize(attributes) {
@@ -71328,7 +71338,7 @@ function _arrayWithHoles(arr) { if (Array.isArray(arr)) return arr; }
             });
 
             _.each(removed_members, occupant => {
-              if (occupant.get('jid') === _converse.bare_jid) {
+              if (occupant.get('bare_jid') === _converse.bare_jid) {
                 return;
               }
 
@@ -71338,17 +71348,9 @@ function _arrayWithHoles(arr) { if (Array.isArray(arr)) return arr; }
             });
 
             _.each(new_members, attrs => {
-              let occupant;
-
-              if (attrs.jid) {
-                occupant = this.findOccupant({
-                  'jid': attrs.jid
-                });
-              } else {
-                occupant = this.findOccupant({
-                  'nick': attrs.nick
-                });
-              }
+              const occupant = this.findWhere({
+                'nick': attrs.nick
+              });
 
               if (occupant) {
                 occupant.save(attrs);
@@ -71357,27 +71359,6 @@ function _arrayWithHoles(arr) { if (Array.isArray(arr)) return arr; }
               }
             });
           }).catch(_.partial(_converse.log, _, Strophe.LogLevel.ERROR));
-        },
-
-        findOccupant(data) {
-          /* Try to find an existing occupant based on the passed in
-           * data object.
-           *
-           * If we have a JID, we use that as lookup variable,
-           * otherwise we use the nick. We don't always have both,
-           * but should have at least one or the other.
-           */
-          const jid = Strophe.getBareJidFromJid(data.jid);
-
-          if (jid !== null) {
-            return this.where({
-              'jid': jid
-            }).pop();
-          } else {
-            return this.where({
-              'nick': data.nick
-            }).pop();
-          }
         }
 
       });
