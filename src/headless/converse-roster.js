@@ -329,7 +329,7 @@ converse.plugins.add('converse-roster', {
                 const iq = $iq({type: 'set'})
                     .c('query', {xmlns: Strophe.NS.ROSTER})
                     .c('item', {jid: this.get('jid'), subscription: "remove"});
-                _converse.connection.sendIQ(iq, callback, errback);
+                _converse.api.sendIQ(iq).then(callback).catch(errback);
                 return this;
             }
         });
@@ -466,7 +466,7 @@ converse.plugins.add('converse-roster', {
                     .c('query', {xmlns: Strophe.NS.ROSTER})
                     .c('item', { jid, name });
                 _.each(groups, function (group) { iq.c('group').t(group).up(); });
-                _converse.connection.sendIQ(iq, callback, errback);
+                _converse.api.sendIQ(iq).then(callback).catch(errback);
             },
 
             addContactToRoster (jid, name, groups, attributes) {
@@ -586,7 +586,7 @@ converse.plugins.add('converse-roster', {
                         _converse.log(errmsg, Strophe.LogLevel.ERROR);
                         reject(new Error(errmsg));
                     }
-                    return _converse.connection.sendIQ(iq, callback, errback);
+                    return _converse.api.sendIQ(iq).then(callback).catch(errback);
                 });
             },
 
