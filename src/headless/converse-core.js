@@ -282,6 +282,26 @@ _converse.__ = function (str) {
     return i18n.translate.apply(i18n, arguments);
 }
 
+_converse.Model = Backbone.Model.extend({
+
+    save (key, val, options={}) {
+        const args = arguments;
+        return new Promise((resolve, reject) => {
+            const callback = options.success;
+            options.success = () => {
+                resolve();
+                callback.apply(this, args);
+            }
+            const errback = options.error;
+            options.error = (e) => {
+                reject(e);
+                errback.apply(this, args);
+            }
+            return Backbone.Model.prototype.save.call(this, key, val, options);
+        });
+    }
+});
+
 const __ = _converse.__;
 
 const PROMISES = [

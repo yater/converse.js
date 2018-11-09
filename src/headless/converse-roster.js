@@ -189,7 +189,7 @@ converse.plugins.add('converse-roster', {
         });
 
 
-        _converse.ModelWithVCardAndPresence = Backbone.Model.extend({
+        _converse.ModelWithVCardAndPresence = _converse.Model.extend({
             initialize () {
                 this.setVCard();
                 this.setPresence();
