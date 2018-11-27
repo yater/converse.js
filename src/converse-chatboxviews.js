@@ -18,28 +18,6 @@ import tpl_chatboxes from "templates/chatboxes.html";
 const { Backbone, _, utils } = converse.env;
 const u = utils;
 
-const AvatarMixin = {
-
-    renderAvatar (el) {
-        el = el || this.el;
-        const avatar_el = el.querySelector('canvas.avatar, svg.avatar');
-        if (avatar_el === null) {
-            return;
-        }
-        if (this.model.vcard) {
-            const data = {
-                'classes': avatar_el.getAttribute('class'),
-                'width': avatar_el.getAttribute('width'),
-                'height': avatar_el.getAttribute('height'),
-            }
-            const image_type = this.model.vcard.get('image_type');
-            const image = this.model.vcard.get('image');
-            data['image'] = "data:" + image_type + ";base64," + image;
-            avatar_el.outerHTML = tpl_avatar(data);
-        }
-    },
-};
-
 
 converse.plugins.add('converse-chatboxviews', {
 
@@ -76,8 +54,31 @@ converse.plugins.add('converse-chatboxviews', {
             'theme': 'default'
         });
 
-        _converse.ViewWithAvatar = Backbone.NativeView.extend(AvatarMixin);
-        _converse.VDOMViewWithAvatar = Backbone.VDOMView.extend(AvatarMixin);
+
+        _converse.AvatarMixin = {
+
+            renderAvatar (el) {
+                el = el || this.el;
+                const avatar_el = el.querySelector('canvas.avatar, svg.avatar');
+                if (avatar_el === null) {
+                    return;
+                }
+                if (this.model.vcard) {
+                    const data = {
+                        'classes': avatar_el.getAttribute('class'),
+                        'width': avatar_el.getAttribute('width'),
+                        'height': avatar_el.getAttribute('height'),
+                    }
+                    const image_type = this.model.vcard.get('image_type');
+                    const image = this.model.vcard.get('image');
+                    data['image'] = "data:" + image_type + ";base64," + image;
+                    avatar_el.outerHTML = tpl_avatar(data);
+                }
+            },
+        };
+
+        _converse.ViewWithAvatar = Backbone.NativeView.extend(_converse.AvatarMixin);
+        _converse.VDOMViewWithAvatar = Backbone.VDOMView.extend(_converse.AvatarMixin);
 
 
         _converse.ChatBoxViews = Overview.extend({

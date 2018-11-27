@@ -15,6 +15,7 @@ import SHA1 from 'strophe.js/src/sha1';
 import converse from "@converse/headless/converse-core";
 import log from "@converse/headless/log";
 import tpl_add_contact_modal from "templates/add_contact_modal.html";
+import tpl_avatar from "templates/avatar.svg";
 import tpl_group_header from "templates/group_header.html";
 import tpl_pending_contact from "templates/pending_contact.html";
 import tpl_requesting_contact from "templates/requesting_contact.html";
@@ -326,7 +327,11 @@ converse.plugins.add('converse-rosterview', {
             }
         });
 
-        _converse.RosterContactView = Backbone.NativeView.extend({
+        // extends NativeView with Avatar mixin
+        _converse.ViewWithAvatar = Backbone.NativeView.extend(_converse.AvatarMixin);
+
+        // RosterContactView is ViewWithAvatar extended
+        _converse.RosterContactView = _converse.ViewWithAvatar.extend({
             tagName: 'li',
             className: 'list-item d-flex hidden controlbox-padded',
 
@@ -420,6 +425,7 @@ converse.plugins.add('converse-rosterview', {
                     this.el.classList.add(subscription);
                     this.renderRosterItem(this.model);
                 }
+                this.renderAvatar();
                 return this;
             },
 
@@ -457,7 +463,8 @@ converse.plugins.add('converse-rosterview', {
                         'desc_chat': __('Click to chat with %1$s (JID: %2$s)', display_name, item.get('jid')),
                         'desc_remove': __('Click to remove %1$s as a contact', display_name),
                         'allow_contact_removal': _converse.allow_contact_removal,
-                        'num_unread': item.get('num_unread') || 0
+                        'num_unread': item.get('num_unread') || 0,
+                        classes: ''
                     })
                 );
                 return this;
