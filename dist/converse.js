@@ -49020,10 +49020,9 @@ _converse_headless_converse_core__WEBPACK_IMPORTED_MODULE_3__["default"].plugins
         /* This method gets overridden in src/converse-controlbox.js if
          * the controlbox plugin is active.
          */
-        this.each(function (view) {
-          view.close();
-        });
-        return this;
+        return Promise.all(this.map(view => view.close({
+          'name': 'closeAllChatBoxes'
+        })));
       },
 
       chatBoxMayBeShown(chatbox) {
@@ -50322,8 +50321,6 @@ _converse_headless_converse_core__WEBPACK_IMPORTED_MODULE_5__["default"].plugins
         this.remove();
 
         _converse.emit('chatBoxClosed', this);
-
-        return this;
       },
 
       renderEmojiPicker() {
@@ -50688,18 +50685,6 @@ _converse_headless_converse_core__WEBPACK_IMPORTED_MODULE_5__["default"].plugins
 
     },
     ChatBoxViews: {
-      closeAllChatBoxes() {
-        const _converse = this.__super__._converse;
-        this.each(function (view) {
-          if (view.model.get('id') === 'controlbox' && (_converse.disconnection_cause !== _converse.LOGOUT || _converse.show_controlbox_by_default)) {
-            return;
-          }
-
-          view.close();
-        });
-        return this;
-      },
-
       getChatBoxWidth(view) {
         const _converse = this.__super__._converse;
         const controlbox = this.get('controlbox');
@@ -50926,9 +50911,13 @@ _converse_headless_converse_core__WEBPACK_IMPORTED_MODULE_5__["default"].plugins
         this.el.querySelector('.controlbox-panes').insertAdjacentElement('afterBegin', this.controlbox_pane.el);
       },
 
-      close(ev) {
+      async close(ev) {
         if (ev && ev.preventDefault) {
           ev.preventDefault();
+        }
+
+        if (ev.name === 'closeAllChatBoxes' && (_converse.disconnection_cause !== _converse.LOGOUT || _converse.show_controlbox_by_default)) {
+          return;
         }
 
         if (_converse.sticky_controlbox) {
@@ -50936,8 +50925,13 @@ _converse_headless_converse_core__WEBPACK_IMPORTED_MODULE_5__["default"].plugins
         }
 
         if (_converse.connection.connected && !_converse.connection.disconnecting) {
-          this.model.save({
-            'closed': true
+          await new Promise((resolve, reject) => {
+            return this.model.save({
+              'closed': true
+            }, {
+              'success': resolve,
+              'error': reject
+            });
           });
         } else {
           this.model.trigger('hide');
@@ -61671,6 +61665,8 @@ _converse_core__WEBPACK_IMPORTED_MODULE_2__["default"].plugins.add('converse-cha
             'references': this.getReferencesFromStanza(stanza),
             'older_versions': older_versions,
             'edited': moment().format()
+          }, {
+            'wait': true
           });
           return true;
         }
@@ -62146,7 +62142,11 @@ _converse_core__WEBPACK_IMPORTED_MODULE_2__["default"].plugins.add('converse-cha
           // TODO: handle <subject> messages (currently being done by ChatRoom)
           return;
         } else {
-          return this.messages.create(attrs);
+          return new Promise((success, error) => this.messages.create(attrs, {
+            success,
+            error,
+            'wait': true
+          }));
         }
       },
 
@@ -62285,8 +62285,8 @@ _converse_core__WEBPACK_IMPORTED_MODULE_2__["default"].plugins.add('converse-cha
           _converse.log(message, Strophe.LogLevel.ERROR);
         }
 
-        const attrs = await chatbox.getMessageAttributesFromStanza(message, message);
-        chatbox.messages.create(attrs);
+        await chatbox.createMessage(message, message);
+        return true;
       },
 
       getMessageBody(stanza) {
