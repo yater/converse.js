@@ -145,8 +145,29 @@ body.reset {
     }
 
     .brand-heading {
-        font-size: 200%;
+        display: inline-flex;
+        align-items: flex-end;
         font-family: var(--heading-font);
+        font-size: 200%;
+        margin-top: 0.8em;
+
+        .converse-svg-logo {
+            height: 1.2em;
+            margin-right: 0.25em;
+            .cls-1 {
+                isolation: isolate;
+            }
+            .cls-2 {
+                opacity: 0.5;
+                mix-blend-mode: multiply;
+            }
+            .cls-3{
+                fill: white;
+            }
+            .cls-4{
+                fill: white;
+            }
+        }
     }
 
     .popover {

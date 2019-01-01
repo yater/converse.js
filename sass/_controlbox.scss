@@ -488,12 +488,20 @@
             @include make-col(12);
             margin-bottom: 1em;
             text-align: center;
+            a {
+                color: var(--brand-heading-link-color);
+            }
             .brand-heading {
                 font-size: 150%;
                 font-size: 600%;
                 padding: 0.7em 0 0 0;
                 opacity: 0.8;
                 color: var(--brand-heading-color);
+            }
+            .brand-byline {
+                opacity: 0.5;
+                font-size: 150%;
+                margin-bottom: 2em;
             }
             .brand-subtitle {
                 font-size: 90%;
@@ -512,6 +520,32 @@
             width: 100%;
             .box-flyout {
                 width: 100%;
+                .controlbox-panes {
+                    color: white !important;
+                    background: url(images/header.jpg) no-repeat bottom center scroll;
+                    -webkit-background-size: cover;
+                    -moz-background-size: cover;
+                    background-size: cover;
+                    -o-background-size: cover;
+
+                    .controlbox-pane {
+                        background-color: transparent;
+                    }
+                    #converse-login {
+                        background-color: transparent;
+                    }
+
+                    .brand-heading-container {
+                        .brand-heading {
+                            color: white;
+                            opacity: 1;
+                        }
+                        .brand-subtitle {
+                            font-size: 90%;
+                            padding: 0.5em;
+                        }
+                    }
+                }
             }
         }
         .box-flyout {

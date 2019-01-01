@@ -9294,6 +9294,7 @@ readers do not read off random characters that represent icons */
   --chat-status-busy: #E77051;
   --chat-status-away: #E7A151;
   --brand-heading-color: #387592;
+  --brand-heading-link-color: #BBD9E8;
   --completion-light-color: #FFB9A7;
   --completion-normal-color: #E77051;
   --completion-dark-color: #D24E2B;
@@ -9351,7 +9352,7 @@ readers do not read off random characters that represent icons */
   --mobile-chat-width: 100%;
   --mobile-chat-height: 400px;
   --normal-font: "Helvetica", "Arial", sans-serif;
-  --heading-font: futura, 'Century Gothic', 'URW Gothic L', Verdana, sans-serif;
+  --heading-font: 'Baumans', cursive;
   --heading-display: block;
   --heading-color: white;
   --chatroom-head-color: #E77051;
@@ -9597,8 +9598,23 @@ body.reset {
   #conversejs .brand-heading-container {
     text-align: center; }
   #conversejs .brand-heading {
+    display: inline-flex;
+    align-items: flex-end;
+    font-family: var(--heading-font);
     font-size: 200%;
-    font-family: var(--heading-font); }
+    margin-top: 0.8em; }
+    #conversejs .brand-heading .converse-svg-logo {
+      height: 1.2em;
+      margin-right: 0.25em; }
+      #conversejs .brand-heading .converse-svg-logo .cls-1 {
+        isolation: isolate; }
+      #conversejs .brand-heading .converse-svg-logo .cls-2 {
+        opacity: 0.5;
+        mix-blend-mode: multiply; }
+      #conversejs .brand-heading .converse-svg-logo .cls-3 {
+        fill: white; }
+      #conversejs .brand-heading .converse-svg-logo .cls-4 {
+        fill: white; }
   #conversejs .popover {
     position: fixed; }
   #conversejs .converse-chatboxes {
@@ -10997,6 +11013,9 @@ body.reset {
     max-width: 100%;
     margin-bottom: 1em;
     text-align: center; }
+    #conversejs.converse-fullscreen #controlbox .brand-heading-container a,
+    #conversejs.converse-mobile #controlbox .brand-heading-container a {
+      color: var(--brand-heading-link-color); }
     #conversejs.converse-fullscreen #controlbox .brand-heading-container .brand-heading,
     #conversejs.converse-mobile #controlbox .brand-heading-container .brand-heading {
       font-size: 150%;
@@ -11004,6 +11023,11 @@ body.reset {
       padding: 0.7em 0 0 0;
       opacity: 0.8;
       color: var(--brand-heading-color); }
+    #conversejs.converse-fullscreen #controlbox .brand-heading-container .brand-byline,
+    #conversejs.converse-mobile #controlbox .brand-heading-container .brand-byline {
+      opacity: 0.5;
+      font-size: 150%;
+      margin-bottom: 2em; }
     #conversejs.converse-fullscreen #controlbox .brand-heading-container .brand-subtitle,
     #conversejs.converse-mobile #controlbox .brand-heading-container .brand-subtitle {
       font-size: 90%;
@@ -11034,6 +11058,28 @@ body.reset {
     #conversejs.converse-fullscreen #controlbox.logged-out .box-flyout,
     #conversejs.converse-mobile #controlbox.logged-out .box-flyout {
       width: 100%; }
+      #conversejs.converse-fullscreen #controlbox.logged-out .box-flyout .controlbox-panes,
+      #conversejs.converse-mobile #controlbox.logged-out .box-flyout .controlbox-panes {
+        color: white !important;
+        background: url(images/header.jpg) no-repeat bottom center scroll;
+        -webkit-background-size: cover;
+        -moz-background-size: cover;
+        background-size: cover;
+        -o-background-size: cover; }
+        #conversejs.converse-fullscreen #controlbox.logged-out .box-flyout .controlbox-panes .controlbox-pane,
+        #conversejs.converse-mobile #controlbox.logged-out .box-flyout .controlbox-panes .controlbox-pane {
+          background-color: transparent; }
+        #conversejs.converse-fullscreen #controlbox.logged-out .box-flyout .controlbox-panes #converse-login,
+        #conversejs.converse-mobile #controlbox.logged-out .box-flyout .controlbox-panes #converse-login {
+          background-color: transparent; }
+        #conversejs.converse-fullscreen #controlbox.logged-out .box-flyout .controlbox-panes .brand-heading-container .brand-heading,
+        #conversejs.converse-mobile #controlbox.logged-out .box-flyout .controlbox-panes .brand-heading-container .brand-heading {
+          color: white;
+          opacity: 1; }
+        #conversejs.converse-fullscreen #controlbox.logged-out .box-flyout .controlbox-panes .brand-heading-container .brand-subtitle,
+        #conversejs.converse-mobile #controlbox.logged-out .box-flyout .controlbox-panes .brand-heading-container .brand-subtitle {
+          font-size: 90%;
+          padding: 0.5em; }
   #conversejs.converse-fullscreen #controlbox .box-flyout,
   #conversejs.converse-mobile #controlbox .box-flyout {
     border: 0;

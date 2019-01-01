@@ -7,11 +7,12 @@ $font-path: "webfonts/icomoon/fonts/" !default;
     --subdued-color: #A8ABA1;
     --subdued-color-lighten-25-percent: #e6e7e4; // lighten(#A8ABA1, 25%)
 
-    --chat-status-online: #3AA569; // $green
-    --chat-status-busy: #E77051; // $red
-    --chat-status-away: #E7A151; // $orange
+    --chat-status-online: #3AA569; // green
+    --chat-status-busy: #E77051; // red
+    --chat-status-away: #E7A151; // orange
 
-    --brand-heading-color: #387592; // $blue
+    --brand-heading-color: #387592; // blue
+    --brand-heading-link-color: #BBD9E8; // lighter blue 
 
     --completion-light-color: #FFB9A7; // $lightest-red
     --completion-normal-color: #E77051; // $red
@@ -94,7 +95,7 @@ $font-path: "webfonts/icomoon/fonts/" !default;
     // --font-path: "webfonts/icomoon/fonts/";
 
     --normal-font: "Helvetica", "Arial", sans-serif;
-    --heading-font: futura, 'Century Gothic', 'URW Gothic L', Verdana, sans-serif;
+    --heading-font: 'Baumans', cursive;
     --heading-display: block;
     --heading-color: white;
 

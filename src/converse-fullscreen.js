@@ -29,8 +29,11 @@ converse.plugins.add('converse-fullscreen', {
 
         ControlBoxView: {
             createBrandHeadingHTML() {
-                const { _converse } = this.__super__;
+                const { _converse } = this.__super__,
+                      { __ } = _converse;
+
                 return tpl_brand_heading({
+                    '__': __,
                     'version_name': _converse.VERSION_NAME
                 });
             },
