@@ -659,7 +659,7 @@
 
             await test_utils.waitUntil(() => _converse.rosterview.el.querySelectorAll('.roster-group').length);
             await test_utils.openChatBoxFor(_converse, contact_jid);
-            const chatview = await _converse.api.chatviews.get(contact_jid);
+            const chatview = _converse.api.chatviews.get(contact_jid);
             expect(u.isVisible(chatview.el)).toBeTruthy();
             expect(chatview.model.get('minimized')).toBeFalsy();
             chatview.el.querySelector('.toggle-chatbox-button').click();
@@ -2003,7 +2003,7 @@
                 _converse.emit('rosterContactsFetched');
                 const contact_jid = mock.cur_names[0].replace(/ /g,'.').toLowerCase() + '@localhost';
                 await test_utils.openChatBoxFor(_converse, contact_jid)
-                const view = await _converse.api.chatviews.get(contact_jid);
+                const view = _converse.api.chatviews.get(contact_jid);
                 spyOn(view.model, 'sendMessage').and.callThrough();
                 const url = base_url+"/logo/conversejs-filled.svg";
 
@@ -2160,7 +2160,7 @@
                 async function (done, _converse) {
 
             await test_utils.openAndEnterChatRoom(_converse, 'lounge', 'localhost', 'dummy');
-            const view = _converse.chatboxviews.get('lounge@localhost');
+            const view = _converse.api.chatviews.get('lounge@localhost');
             if (!view.el.querySelectorAll('.chat-area').length) { view.renderChatArea(); }
             const message = 'dummy: Your attention is required';
             const nick = mock.chatroom_names[0],
@@ -2259,7 +2259,7 @@
 
             test_utils.createContacts(_converse, 'current');
             await test_utils.openAndEnterChatRoom(_converse, 'lounge', 'localhost', 'dummy');
-            const view = _converse.chatboxviews.get('lounge@localhost');
+            const view = _converse.api.chatviews.get('lounge@localhost');
             const msg = $msg({
                     from: 'lounge@localhost/dummy',
                     id: (new Date()).getTime(),
@@ -2279,7 +2279,7 @@
             await test_utils.openAndEnterChatRoom(_converse, 'lounge', 'localhost', 'dummy');
             const jid = 'lounge@localhost';
             const room = _converse.api.rooms.get(jid);
-            const view = _converse.chatboxviews.get(jid);
+            const view = _converse.api.chatviews.get(jid);
             const stanza = $pres({
                     to: 'dummy@localhost/_converse.js-29092160',
                     from: 'coven@chat.shakespeare.lit/newguy'
@@ -2345,7 +2345,7 @@
             await test_utils.openAndEnterChatRoom(_converse, 'lounge', 'localhost', 'dummy');
             const room_jid = 'lounge@localhost';
             const room = _converse.api.rooms.get(room_jid);
-            const view = _converse.chatboxviews.get(room_jid);
+            const view = _converse.api.chatviews.get(room_jid);
             const textarea = view.el.querySelector('textarea.chat-textarea');
             expect(textarea.value).toBe('');
             view.keyPressed({
