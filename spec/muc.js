@@ -2619,7 +2619,7 @@
 
             it("takes /help to show the available commands and commands can be disabled by config",
                 mock.initConverse(
-                    null, ['rosterGroupsFetched'], {muc_disable_moderator_commands: ['mute', 'voice']},
+                    null, ['rosterGroupsFetched'], {disable_slash_commands: ['mute', 'voice']},
                     async function (done, _converse) {
 
                 await test_utils.openAndEnterChatRoom(_converse, 'lounge', 'localhost', 'dummy');
