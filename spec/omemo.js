@@ -123,8 +123,8 @@
             view.model.set('omemo_active', true);
 
             const textarea = view.el.querySelector('.chat-textarea');
-            textarea.value = 'This message will be encrypted';
-            view.keyPressed({
+            textarea.textContent = 'This message will be encrypted';
+            view.onKeyDown({
                 target: textarea,
                 preventDefault: _.noop,
                 keyCode: 13 // Enter
@@ -308,8 +308,8 @@
             expect(u.hasClass('fa-lock', toggle)).toBe(true);
 
             const textarea = view.el.querySelector('.chat-textarea');
-            textarea.value = 'This message will be encrypted';
-            view.keyPressed({
+            textarea.textContent = 'This message will be encrypted';
+            view.onKeyDown({
                 target: textarea,
                 preventDefault: _.noop,
                 keyCode: 13 // Enter
@@ -457,8 +457,8 @@
             expect(devicelist.devices.get('988349631').get('active')).toBe(true);
 
             const textarea = view.el.querySelector('.chat-textarea');
-            textarea.value = 'This is an encrypted message from this device';
-            view.keyPressed({
+            textarea.textContent = 'This is an encrypted message from this device';
+            view.onKeyDown({
                 target: textarea,
                 preventDefault: _.noop,
                 keyCode: 13 // Enter
@@ -514,8 +514,8 @@
             expect(view.model.get('omemo_supported')).toBe(true);
 
             const textarea = view.el.querySelector('.chat-textarea');
-            textarea.value = 'This message will be encrypted';
-            view.keyPressed({
+            textarea.textContent = 'This message will be encrypted';
+            view.onKeyDown({
                 target: textarea,
                 preventDefault: _.noop,
                 keyCode: 13 // Enter
@@ -598,7 +598,7 @@
                       "to be subscribed to their presence in order to see their OMEMO information");
 
             expect(view.model.get('omemo_supported')).toBe(false);
-            expect(view.el.querySelector('.chat-textarea').value).toBe('This message will be encrypted');
+            expect(view.el.querySelector('.chat-textarea').textContent).toBe('This message will be encrypted');
             done();
         }));
 
@@ -1250,8 +1250,8 @@
             expect(u.hasClass('fa-lock', toggle)).toBe(true);
 
             const textarea = view.el.querySelector('.chat-textarea');
-            textarea.value = 'This message will be sent encrypted';
-            view.keyPressed({
+            textarea.textContent = 'This message will be sent encrypted';
+            view.onKeyDown({
                 target: textarea,
                 preventDefault: _.noop,
                 keyCode: 13

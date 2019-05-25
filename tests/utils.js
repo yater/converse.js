@@ -334,8 +334,8 @@
 
     utils.sendMessage = function (view, message) {
         const promise = new Promise((resolve, reject) => view.on('messageInserted', resolve));
-        view.el.querySelector('.chat-textarea').value = message;
-        view.keyPressed({
+        view.el.querySelector('.chat-textarea').textContent = message;
+        view.onKeyDown({
             target: view.el.querySelector('textarea.chat-textarea'),
             preventDefault: _.noop,
             keyCode: 13

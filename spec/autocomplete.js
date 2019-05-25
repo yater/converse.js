@@ -38,17 +38,18 @@
             });
 
             // Test that pressing @ brings up all options
-            const textarea = view.el.querySelector('textarea.chat-textarea');
+            const msg_compose_el = view.el.querySelector('.chat-textarea');
             const at_event = {
-                'target': textarea,
+                'target': msg_compose_el,
                 'preventDefault': _.noop,
                 'stopPropagation': _.noop,
                 'keyCode': 50,
                 'key': '@'
             };
-            view.keyPressed(at_event);
-            textarea.value = '@';
-            view.keyUp(at_event);
+            view.onKeyDown(at_event);
+            msg_compose_el.textContent = '@';
+            await u.placeCaret('end', msg_compose_el);
+            view.onKeyUp(at_event);
 
             expect(view.el.querySelectorAll('.suggestion-box__results li').length).toBe(3);
             expect(view.el.querySelector('.suggestion-box__results li:first-child').textContent).toBe('dick');
@@ -78,33 +79,34 @@
             _converse.connection._dataRecv(test_utils.createRequest(presence));
             expect(view.model.occupants.length).toBe(2);
 
-            const textarea = view.el.querySelector('textarea.chat-textarea');
-            textarea.value = "hello som";
+            const msg_compose_el = view.el.querySelector('.chat-textarea');
+            msg_compose_el.textContent = "hello som";
 
             // Press tab
             const tab_event = {
-                'target': textarea,
+                'target': msg_compose_el,
                 'preventDefault': _.noop,
                 'stopPropagation': _.noop,
                 'keyCode': 9,
                 'key': 'Tab'
             }
-            view.keyPressed(tab_event);
-            view.keyUp(tab_event);
+            await u.placeCaret('end', msg_compose_el);
+            view.onKeyDown(tab_event);
+            view.onKeyUp(tab_event);
             expect(view.el.querySelector('.suggestion-box__results').hidden).toBeFalsy();
             expect(view.el.querySelectorAll('.suggestion-box__results li').length).toBe(1);
             expect(view.el.querySelector('.suggestion-box__results li').textContent).toBe('some1');
 
             const backspace_event = {
-                'target': textarea,
+                'target': msg_compose_el,
                 'preventDefault': _.noop,
                 'keyCode': 8
             }
             for (var i=0; i<3; i++) {
                 // Press backspace 3 times to remove "som"
-                view.keyPressed(backspace_event);
-                textarea.value = textarea.value.slice(0, textarea.value.length-1)
-                view.keyUp(backspace_event);
+                view.onKeyDown(backspace_event);
+                msg_compose_el.textContent = msg_compose_el.textContent.slice(0, msg_compose_el.textContent.length-1)
+                view.onKeyUp(backspace_event);
             }
             expect(view.el.querySelector('.suggestion-box__results').hidden).toBeTruthy();
 
@@ -120,31 +122,32 @@
                 });
             _converse.connection._dataRecv(test_utils.createRequest(presence));
 
-            textarea.value = "hello s s";
-            view.keyPressed(tab_event);
-            view.keyUp(tab_event);
+            msg_compose_el.textContent = "hello s s";
+            await u.placeCaret('end', msg_compose_el);
+            view.onKeyDown(tab_event);
+            view.onKeyUp(tab_event);
             expect(view.el.querySelector('.suggestion-box__results').hidden).toBeFalsy();
             expect(view.el.querySelectorAll('.suggestion-box__results li').length).toBe(2);
 
             const up_arrow_event = {
-                'target': textarea,
+                'target': msg_compose_el,
                 'preventDefault': () => (up_arrow_event.defaultPrevented = true),
                 'stopPropagation': _.noop,
                 'keyCode': 38
             }
-            view.keyPressed(up_arrow_event);
-            view.keyUp(up_arrow_event);
+            view.onKeyDown(up_arrow_event);
+            view.onKeyUp(up_arrow_event);
             expect(view.el.querySelectorAll('.suggestion-box__results li').length).toBe(2);
             expect(view.el.querySelector('.suggestion-box__results li[aria-selected="false"]').textContent).toBe('some1');
             expect(view.el.querySelector('.suggestion-box__results li[aria-selected="true"]').textContent).toBe('some2');
 
-            view.keyPressed({
-                'target': textarea,
+            view.onKeyDown({
+                'target': msg_compose_el,
                 'preventDefault': _.noop,
                 'stopPropagation': _.noop,
                 'keyCode': 13 // Enter
             });
-            expect(textarea.value).toBe('hello s @some2 ');
+            expect(msg_compose_el.textContent).toBe('hello s @some2 ');
 
             // Test that pressing tab twice selects
             presence = $pres({
@@ -158,13 +161,14 @@
                     'role': 'participant'
                 });
             _converse.connection._dataRecv(test_utils.createRequest(presence));
-            textarea.value = "hello z";
-            view.keyPressed(tab_event);
-            view.keyUp(tab_event);
+            msg_compose_el.textContent = "hello z";
+            await u.placeCaret('end', msg_compose_el);
+            view.onKeyDown(tab_event);
+            view.onKeyUp(tab_event);
 
-            view.keyPressed(tab_event);
-            view.keyUp(tab_event);
-            expect(textarea.value).toBe('hello @z3r0 ');
+            view.onKeyDown(tab_event);
+            view.onKeyUp(tab_event);
+            expect(msg_compose_el.textContent).toBe('hello @z3r0 ');
             done();
         }));
 
@@ -189,20 +193,21 @@
             _converse.connection._dataRecv(test_utils.createRequest(presence));
             expect(view.model.occupants.length).toBe(2);
 
-            const textarea = view.el.querySelector('textarea.chat-textarea');
-            textarea.value = "hello @some1 ";
+            const msg_compose_el = view.el.querySelector('.chat-textarea');
+            msg_compose_el.textContent = "hello @some1 ";
 
             // Press backspace
             const backspace_event = {
-                'target': textarea,
+                'target': msg_compose_el,
                 'preventDefault': _.noop,
                 'stopPropagation': _.noop,
                 'keyCode': 8,
                 'key': 'Backspace'
             }
-            view.keyPressed(backspace_event);
-            textarea.value = "hello @some1"; // Mimic backspace
-            view.keyUp(backspace_event);
+            msg_compose_el.textContent = "hello @some1"; // Mimic backspace
+            await u.placeCaret('end', msg_compose_el);
+            view.onKeyDown(backspace_event);
+            view.onKeyUp(backspace_event);
             expect(view.el.querySelector('.suggestion-box__results').hidden).toBeFalsy();
             expect(view.el.querySelectorAll('.suggestion-box__results li').length).toBe(1);
             expect(view.el.querySelector('.suggestion-box__results li').textContent).toBe('some1');

@@ -340,19 +340,86 @@ u.siblingIndex = function (el) {
     return i;
 };
 
-u.getCurrentWord = function (input, index) {
-    if (!index) {
-        index = input.selectionEnd || undefined;
+
+function isInputElement (el) {
+    return ['TEXTAREA', 'INPUT'].includes(el.nodeName);
+}
+
+u.placeCaret = function (position, el) {
+    if (el !== document.activeElement) {
+        el.focus();
     }
-    return _.last(input.value.slice(0, index).split(' '));
+    const promise = u.getResolveablePromise();
+    let setSelection;
+    if (isInputElement(el)) {
+        let len;
+        if (position === 'end') {
+            // Double the length because Opera is inconsistent
+            // about whether a carriage return is one character or two.
+            len = el.value.length * 2;
+        } else if (position === 'start') {
+            len = 0;
+        }
+        setSelection = () => el.setSelectionRange(len, len);
+    } else {
+        const range = document.createRange();
+        if (position === 'end') {
+            const last_node = Array.from(el.childNodes).pop() || el;
+            range.selectNodeContents(last_node);
+        } else if (position === 'start') {
+            const first_node = el.childNodes[0] || el;
+            range.setEnd(first_node, 0);
+        }
+        range.collapse(false);
+        setSelection = () => {
+            const selection = window.getSelection();
+            selection.removeAllRanges();
+            selection.addRange(range);
+        }
+    }
+    // Scroll to the bottom, in case we're in a tall el
+    // (Necessary for Firefox and Chrome)
+    this.scrollTop = 999999;
+    setTimeout(() => {
+        setSelection();
+        promise.resolve();
+    }, 1);
+    return promise;
 };
 
-u.replaceCurrentWord = function (input, new_value) {
-    const cursor = input.selectionEnd || undefined,
-          current_word = _.last(input.value.slice(0, cursor).split(' ')),
-          value = input.value;
-    input.value = value.slice(0, cursor - current_word.length) + `${new_value} ` + value.slice(cursor);
-    input.selectionEnd = cursor - current_word.length + new_value.length + 1;
+u.getCaretPosition = function (el) {
+    if (['TEXTAREA', 'INPUT'].includes(el.nodeName)) {
+        return el.selectionEnd || null;
+    } else {
+        const selection = window.getSelection();
+        const caret_position = selection.anchorOffset;
+        if (el.contains(selection.anchorNode)) {
+            return selection.anchorOffset;
+        }
+    }
+    return null;
+};
+
+u.getElementValue = function (el) {
+    return isInputElement(el) ? el.value : el.textContent;
+}
+
+u.getCurrentWord = function (el) {
+    const index = u.getCaretPosition(el);
+    return index !== null ? _.last(u.getElementValue(el).slice(0, index).split(' ')) : null;
+};
+
+u.replaceCurrentWord = function (el, new_word) {
+    const caret = u.getCaretPosition(el);
+    const value = u.getElementValue(el);
+    const current_word = u.getCurrentWord(el);
+    const new_value = value.slice(0, caret - current_word.length) + `${new_word} ` + value.slice(caret);
+    if (isInputElement(el)) {
+        el.value = new_value;
+    } else {
+        el.textContent = new_value;
+    }
+    el.selectionEnd = caret - current_word.length + new_word.length + 1;
 };
 
 u.triggerEvent = function (el, name, type="Event", bubbles=true, cancelable=true) {
@@ -431,19 +498,6 @@ u.base64ToArrayBuffer = function (b64) {
 
 u.getRandomInt = function (max) {
     return Math.floor(Math.random() * Math.floor(max));
-};
-
-u.putCurserAtEnd = function (textarea) {
-    if (textarea !== document.activeElement) {
-        textarea.focus();
-    }
-    // Double the length because Opera is inconsistent about whether a carriage return is one character or two.
-    const len = textarea.value.length * 2;
-    // Timeout seems to be required for Blink
-    setTimeout(() => textarea.setSelectionRange(len, len), 1);
-    // Scroll to the bottom, in case we're in a tall textarea
-    // (Necessary for Firefox and Chrome)
-    this.scrollTop = 999999;
 };
 
 u.getUniqueId = function () {

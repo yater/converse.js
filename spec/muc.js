@@ -1961,8 +1961,8 @@
                 }
                 const text = 'This is a sent message';
                 const textarea = view.el.querySelector('.chat-textarea');
-                textarea.value = text;
-                view.keyPressed({
+                textarea.textContent = text;
+                view.onKeyDown({
                     target: textarea,
                     preventDefault: _.noop,
                     keyCode: 13
@@ -2658,12 +2658,12 @@
                 await test_utils.openAndEnterChatRoom(_converse, 'lounge', 'localhost', 'dummy');
                 const view = _converse.chatboxviews.get('lounge@localhost');
                 const textarea = view.el.querySelector('.chat-textarea');
-                textarea.value = '/clear';
+                textarea.textContent = '/clear';
 
                 const enter = { 'target': textarea, 'preventDefault': _.noop, 'keyCode': 13 };
-                view.keyPressed(enter);
-                textarea.value = '/help';
-                view.keyPressed(enter);
+                view.onKeyDown(enter);
+                textarea.textContent = '/help';
+                view.onKeyDown(enter);
 
                 let info_messages = Array.prototype.slice.call(view.el.querySelectorAll('.chat-info'), 0);
                 expect(info_messages.length).toBe(19);
@@ -2689,10 +2689,10 @@
 
                 const occupant = view.model.occupants.findWhere({'jid': _converse.bare_jid});
                 occupant.set('affiliation', 'admin');
-                textarea.value = '/clear';
-                view.keyPressed(enter);
-                textarea.value = '/help';
-                view.keyPressed(enter);
+                textarea.textContent = '/clear';
+                view.onKeyDown(enter);
+                textarea.textContent = '/help';
+                view.onKeyDown(enter);
                 info_messages = sizzle('.chat-info', view.el).slice(1);
                 expect(info_messages.length).toBe(17);
                 let commands = info_messages.map(m => m.textContent.replace(/:.*$/, ''));
@@ -2702,20 +2702,20 @@
                     "/op", "/register", "/revoke", "/subject", "/topic", "/voice"
                 ]);
                 occupant.set('affiliation', 'member');
-                textarea.value = '/clear';
-                view.keyPressed(enter);
-                textarea.value = '/help';
-                view.keyPressed(enter);
+                textarea.textContent = '/clear';
+                view.onKeyDown(enter);
+                textarea.textContent = '/help';
+                view.onKeyDown(enter);
                 info_messages = sizzle('.chat-info', view.el).slice(1);
                 expect(info_messages.length).toBe(10);
                 commands = info_messages.map(m => m.textContent.replace(/:.*$/, ''));
                 expect(commands).toEqual(["/clear", "/help", "/kick", "/me", "/mute", "/nick", "/register", "/subject", "/topic", "/voice"]);
 
                 occupant.set('role', 'participant');
-                textarea.value = '/clear';
-                view.keyPressed(enter);
-                textarea.value = '/help';
-                view.keyPressed(enter);
+                textarea.textContent = '/clear';
+                view.onKeyDown(enter);
+                textarea.textContent = '/help';
+                view.onKeyDown(enter);
                 info_messages = sizzle('.chat-info', view.el).slice(1);
                 expect(info_messages.length).toBe(7);
                 commands = info_messages.map(m => m.textContent.replace(/:.*$/, ''));
@@ -2733,10 +2733,10 @@
                 var textarea = view.el.querySelector('.chat-textarea');
                 const enter = { 'target': textarea, 'preventDefault': _.noop, 'keyCode': 13 };
                 spyOn(window, 'confirm').and.callFake(() => true);
-                textarea.value = '/clear';
-                view.keyPressed(enter);
-                textarea.value = '/help';
-                view.keyPressed(enter);
+                textarea.textContent = '/clear';
+                view.onKeyDown(enter);
+                textarea.textContent = '/help';
+                view.onKeyDown(enter);
 
                 const info_messages = Array.prototype.slice.call(view.el.querySelectorAll('.chat-info'), 0);
                 expect(info_messages.length).toBe(17);
@@ -2793,8 +2793,8 @@
 
                 // First check that an error message appears when a
                 // non-existent nick is used.
-                textarea.value = '/member chris Welcome to the club!';
-                view.keyPressed({
+                textarea.textContent = '/member chris Welcome to the club!';
+                view.onKeyDown({
                     target: textarea,
                     preventDefault: _.noop,
                     keyCode: 13
@@ -2805,8 +2805,8 @@
                     .toBe(`Error: couldn't find a groupchat participant "chris"`)
 
                 // Now test with an existing nick
-                textarea.value = '/member marc Welcome to the club!';
-                view.keyPressed({
+                textarea.textContent = '/member marc Welcome to the club!';
+                view.onKeyDown({
                     target: textarea,
                     preventDefault: _.noop,
                     keyCode: 13
@@ -2920,8 +2920,8 @@
                 });
                 // Check the alias /topic
                 const textarea = view.el.querySelector('.chat-textarea');
-                textarea.value = '/topic This is the groupchat subject';
-                view.keyPressed({
+                textarea.textContent = '/topic This is the groupchat subject';
+                view.onKeyDown({
                     target: textarea,
                     preventDefault: _.noop,
                     keyCode: 13
@@ -2930,8 +2930,8 @@
                 expect(sent_stanza.textContent).toBe('This is the groupchat subject');
 
                 // Check /subject
-                textarea.value = '/subject This is a new subject';
-                view.keyPressed({
+                textarea.textContent = '/subject This is a new subject';
+                view.onKeyDown({
                     target: textarea,
                     preventDefault: _.noop,
                     keyCode: 13
@@ -2944,8 +2944,8 @@
                     '</message>');
 
                 // Check case insensitivity
-                textarea.value = '/Subject This is yet another subject';
-                view.keyPressed({
+                textarea.textContent = '/Subject This is yet another subject';
+                view.onKeyDown({
                     target: textarea,
                     preventDefault: _.noop,
                     keyCode: 13
@@ -2967,8 +2967,8 @@
                 const view = _converse.chatboxviews.get('lounge@localhost');
                 spyOn(view, 'clearMessages');
                 const textarea = view.el.querySelector('.chat-textarea')
-                textarea.value = '/clear';
-                view.keyPressed({
+                textarea.textContent = '/clear';
+                view.onKeyDown({
                     target: textarea,
                     preventDefault: _.noop,
                     keyCode: 13
@@ -3009,8 +3009,8 @@
                 _converse.connection._dataRecv(test_utils.createRequest(presence));
 
                 var textarea = view.el.querySelector('.chat-textarea')
-                textarea.value = '/owner';
-                view.keyPressed({
+                textarea.textContent = '/owner';
+                view.onKeyDown({
                     target: textarea,
                     preventDefault: _.noop,
                     keyCode: 13
@@ -3022,7 +3022,7 @@
                 // XXX: Calling onFormSubmitted directly, trying
                 // again via triggering Event doesn't work for some weird
                 // reason.
-                textarea.value = '/owner nobody You\'re responsible';
+                textarea.textContent = '/owner nobody You\'re responsible';
                 view.onFormSubmitted(new Event('submit'));
 
                 expect(view.showErrorMessage).toHaveBeenCalledWith(
@@ -3033,7 +3033,7 @@
                 // XXX: Calling onFormSubmitted directly, trying
                 // again via triggering Event doesn't work for some weird
                 // reason.
-                textarea.value = '/owner annoyingGuy You\'re responsible';
+                textarea.textContent = '/owner annoyingGuy You\'re responsible';
                 view.onFormSubmitted(new Event('submit'));
 
                 expect(view.validateRoleChangeCommand.calls.count()).toBe(3);
@@ -3097,8 +3097,8 @@
                 _converse.connection._dataRecv(test_utils.createRequest(presence));
 
                 const textarea = view.el.querySelector('.chat-textarea')
-                textarea.value = '/ban';
-                view.keyPressed({
+                textarea.textContent = '/ban';
+                view.onKeyDown({
                     target: textarea,
                     preventDefault: _.noop,
                     keyCode: 13
@@ -3111,7 +3111,7 @@
                 // XXX: Calling onFormSubmitted directly, trying
                 // again via triggering Event doesn't work for some weird
                 // reason.
-                textarea.value = '/ban annoyingGuy You\'re annoying';
+                textarea.textContent = '/ban annoyingGuy You\'re annoying';
                 view.onFormSubmitted(new Event('submit'));
 
                 expect(view.validateRoleChangeCommand.calls.count()).toBe(2);
@@ -3177,8 +3177,8 @@
                 _converse.connection._dataRecv(test_utils.createRequest(presence));
 
                 var textarea = view.el.querySelector('.chat-textarea')
-                textarea.value = '/kick';
-                view.keyPressed({
+                textarea.textContent = '/kick';
+                view.onKeyDown({
                     target: textarea,
                     preventDefault: _.noop,
                     keyCode: 13
@@ -3191,7 +3191,7 @@
                 // XXX: Calling onFormSubmitted directly, trying
                 // again via triggering Event doesn't work for some weird
                 // reason.
-                textarea.value = '/kick annoyingGuy You\'re annoying';
+                textarea.textContent = '/kick annoyingGuy You\'re annoying';
                 view.onFormSubmitted(new Event('submit'));
 
                 expect(view.validateRoleChangeCommand.calls.count()).toBe(2);
@@ -3278,8 +3278,8 @@
                 expect(info_msgs.pop().textContent).toBe("trustworthyguy has entered the groupchat");
 
                 var textarea = view.el.querySelector('.chat-textarea')
-                textarea.value = '/op';
-                view.keyPressed({
+                textarea.textContent = '/op';
+                view.onKeyDown({
                     target: textarea,
                     preventDefault: _.noop,
                     keyCode: 13
@@ -3294,7 +3294,7 @@
                 // XXX: Calling onFormSubmitted directly, trying
                 // again via triggering Event doesn't work for some weird
                 // reason.
-                textarea.value = '/op trustworthyguy You\'re trustworthy';
+                textarea.textContent = '/op trustworthyguy You\'re trustworthy';
                 view.onFormSubmitted(new Event('submit'));
 
                 expect(view.validateRoleChangeCommand.calls.count()).toBe(2);
@@ -3336,7 +3336,7 @@
                 // XXX: Calling onFormSubmitted directly, trying
                 // again via triggering Event doesn't work for some weird
                 // reason.
-                textarea.value = '/deop trustworthyguy Perhaps not';
+                textarea.textContent = '/deop trustworthyguy Perhaps not';
                 view.onFormSubmitted(new Event('submit'));
 
                 expect(view.validateRoleChangeCommand.calls.count()).toBe(3);
@@ -3420,8 +3420,8 @@
                 expect(info_msgs.pop().textContent).toBe("annoyingGuy has entered the groupchat");
 
                 const textarea = view.el.querySelector('.chat-textarea')
-                textarea.value = '/mute';
-                view.keyPressed({
+                textarea.textContent = '/mute';
+                view.onKeyDown({
                     target: textarea,
                     preventDefault: _.noop,
                     keyCode: 13
@@ -3435,7 +3435,7 @@
                 // XXX: Calling onFormSubmitted directly, trying
                 // again via triggering Event doesn't work for some weird
                 // reason.
-                textarea.value = '/mute annoyingGuy You\'re annoying';
+                textarea.textContent = '/mute annoyingGuy You\'re annoying';
                 view.onFormSubmitted(new Event('submit'));
 
                 expect(view.validateRoleChangeCommand.calls.count()).toBe(2);
@@ -3478,7 +3478,7 @@
                 // XXX: Calling onFormSubmitted directly, trying
                 // again via triggering Event doesn't work for some weird
                 // reason.
-                textarea.value = '/voice annoyingGuy Now you can talk again';
+                textarea.textContent = '/voice annoyingGuy Now you can talk again';
                 view.onFormSubmitted(new Event('submit'));
 
                 expect(view.validateRoleChangeCommand.calls.count()).toBe(3);
@@ -3533,7 +3533,7 @@
                 });
                 const view = _converse.chatboxviews.get('lounge@localhost');
                 const textarea = view.el.querySelector('.chat-textarea');
-                textarea.value = '/destroy bored';
+                textarea.textContent = '/destroy bored';
                 view.onFormSubmitted(new Event('submit'));
                 expect(sent_IQ.toLocaleString()).toBe(
                     `<iq id="${IQ_id}" to="lounge@localhost" type="set" xmlns="jabber:client">`+
@@ -4781,7 +4781,7 @@
                 await test_utils.openAndEnterChatRoom(_converse, 'trollbox', 'localhost', 'troll');
                 const view = _converse.chatboxviews.get('trollbox@localhost');
                 const textarea = view.el.querySelector('.chat-textarea');
-                textarea.value = 'Hello world';
+                textarea.textContent = 'Hello world';
                 view.onFormSubmitted(new Event('submit'));
 
                 const stanza = u.toStanza(`

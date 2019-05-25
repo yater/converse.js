@@ -263,6 +263,14 @@
             }
 
             .chat-textarea {
+                &:empty:not(:focus):before {
+                    content: attr(data-placeholder);
+                    color: var(--subdued-color);
+                    font-style: italic;
+                }
+                &.disabled {
+                    background-color: var(--disabled-color);
+                }
                 color: var(--chat-textarea-color);
                 background-color: var(--chat-textarea-background-color);
                 border-top-left-radius: 0;

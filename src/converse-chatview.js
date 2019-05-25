@@ -412,14 +412,14 @@ converse.plugins.add('converse-chatview', {
                         'label_message': this.model.get('composing_spoiler') ? __('Hidden message') : __('Message'),
                         'label_send': __('Send'),
                         'label_spoiler_hint': __('Optional hint'),
-                        'message_value': _.get(this.el.querySelector('.chat-textarea'), 'value'),
+                        'message_value': _.get(this.el.querySelector('.chat-textarea'), 'textContent'),
                         'show_send_button': _converse.show_send_button,
                         'show_toolbar': _converse.show_toolbar,
                         'unread_msgs': __('You have unread messages')
                     }));
-                const textarea_el = this.el.querySelector('.chat-textarea');
-                textarea_el.addEventListener('focus', () => this.emitFocused());
-                textarea_el.addEventListener('blur', () => {
+                const msg_compose_el = this.el.querySelector('.chat-textarea');
+                msg_compose_el.addEventListener('focus', () => this.emitFocused());
+                msg_compose_el.addEventListener('blur', () => {
                     /**
                      * Triggered when the focus has been removed from a particular chat.
                      * @event _converse#chatBoxBlurred
@@ -836,7 +836,7 @@ converse.plugins.add('converse-chatview', {
                 }
                 await this.showMessage(message);
                 if (message.get('correcting')) {
-                    this.insertIntoTextArea(message.get('message'), true, true);
+                    this.insertIntoComposeArea(message.get('message'), true, true);
                 }
                 /**
                  * Triggered once a message has been added to a chatbox.
@@ -906,9 +906,8 @@ converse.plugins.add('converse-chatview', {
 
             async onFormSubmitted (ev) {
                 ev.preventDefault();
-                const textarea = this.el.querySelector('.chat-textarea'),
-                      message = textarea.value;
-
+                const msg_compose_el = this.el.querySelector('.chat-textarea');
+                const message = msg_compose_el.textContent;
                 if (!message.replace(/\s/g, '').length) {
                     return;
                 }
@@ -925,15 +924,14 @@ converse.plugins.add('converse-chatview', {
                     hint_el = this.el.querySelector('form.sendXMPPMessage input.spoiler-hint');
                     spoiler_hint = hint_el.value;
                 }
-                u.addClass('disabled', textarea);
-                textarea.setAttribute('disabled', 'disabled');
+                u.addClass('disabled', msg_compose_el);
+                msg_compose_el.setAttribute('contentEditable', 'false');
                 if (this.parseMessageForCommands(message) ||
                     await this.model.sendMessage(message, spoiler_hint)) {
 
                     hint_el.value = '';
-                    textarea.value = '';
-                    u.removeClass('correcting', textarea);
-                    textarea.style.height = 'auto'; // Fixes weirdness
+                    msg_compose_el.innerHTML = '';
+                    u.removeClass('correcting', msg_compose_el);
                     /**
                      * Triggered just before an HTML5 message notification will be sent out.
                      * @event _converse#messageSend
@@ -942,9 +940,9 @@ converse.plugins.add('converse-chatview', {
                      */
                     _converse.api.trigger('messageSend', message);
                 }
-                textarea.removeAttribute('disabled');
-                u.removeClass('disabled', textarea);
-                textarea.focus();
+                msg_compose_el.setAttribute('contentEditable', true);
+                u.removeClass('disabled', msg_compose_el);
+                msg_compose_el.focus();
                 // Suppress events, otherwise superfluous CSN gets set
                 // immediately after the message, causing rate-limiting issues.
                 this.setChatState(_converse.ACTIVE, {'silent': true});
@@ -957,6 +955,7 @@ converse.plugins.add('converse-chatview', {
                     // When ctrl is pressed, no chars are entered into the textarea.
                     return;
                 }
+
                 if (!ev.shiftKey && !ev.altKey) {
                     if (ev.keyCode === _converse.keycodes.FORWARD_SLASH) {
                         // Forward slash is used to run commands. Nothing to do here.
@@ -968,10 +967,18 @@ converse.plugins.add('converse-chatview', {
                             this.emoji_dropdown.toggle();
                         }
                         return this.onFormSubmitted(ev);
-                    } else if (ev.keyCode === _converse.keycodes.UP_ARROW && !ev.target.selectionEnd) {
-                        return this.editEarlierMessage();
-                    } else if (ev.keyCode === _converse.keycodes.DOWN_ARROW && ev.target.selectionEnd === ev.target.value.length) {
-                        return this.editLaterMessage();
+                    }
+                    const caret_position = u.getCaretPosition(ev.target);
+                    if (caret_position !== null) {
+                        const msg_compose_el = ev.target;
+                        if (ev.keyCode === _converse.keycodes.UP_ARROW && caret_position === 0) {
+                            return this.editEarlierMessage();
+                        } else if (
+                                ev.keyCode === _converse.keycodes.DOWN_ARROW &&
+                                caret_position === msg_compose_el.innerHTML.length
+                        ) {
+                            return this.editLaterMessage();
+                        }
                     }
                 }
                 if (_.includes([
@@ -1002,7 +1009,7 @@ converse.plugins.add('converse-chatview', {
                 if (message) {
                     message.save('correcting', false);
                 }
-                this.insertIntoTextArea('', true, false);
+                this.insertIntoComposeArea('', true, false);
             },
 
             onMessageEditButtonClicked (ev) {
@@ -1017,10 +1024,10 @@ converse.plugins.add('converse-chatview', {
                         currently_correcting.save('correcting', false);
                     }
                     message.save('correcting', true);
-                    this.insertIntoTextArea(u.prefixMentions(message), true, true);
+                    this.insertIntoComposeArea(u.prefixMentions(message), true, true);
                 } else {
                     message.save('correcting', false);
-                    this.insertIntoTextArea('', true, false);
+                    this.insertIntoComposeArea('', true, false);
                 }
             },
 
@@ -1039,10 +1046,10 @@ converse.plugins.add('converse-chatview', {
                     }
                 }
                 if (message) {
-                    this.insertIntoTextArea(message.get('message'), true, true);
+                    this.insertIntoComposeArea(message.get('message'), true, true);
                     message.save('correcting', true);
                 } else {
-                    this.insertIntoTextArea('', true, false);
+                    this.insertIntoComposeArea('', true, false);
                 }
             },
 
@@ -1062,7 +1069,7 @@ converse.plugins.add('converse-chatview', {
                 }
                 message = message || _.findLast(this.getOwnMessages(), msg => msg.get('message'));
                 if (message) {
-                    this.insertIntoTextArea(message.get('message'), true, true);
+                    this.insertIntoComposeArea(message.get('message'), true, true);
                     message.save('correcting', true);
                 }
             },
@@ -1084,25 +1091,23 @@ converse.plugins.add('converse-chatview', {
                 return this;
             },
 
-            insertIntoTextArea (value, replace=false, correcting=false) {
-                const textarea = this.el.querySelector('.chat-textarea');
+            insertIntoComposeArea (value, replace=false, correcting=false) {
+                const msg_compose_el = this.el.querySelector('.chat-textarea');
                 if (correcting) {
-                    u.addClass('correcting', textarea);
+                    u.addClass('correcting', msg_compose_el);
                 } else {
-                    u.removeClass('correcting', textarea);
+                    u.removeClass('correcting', msg_compose_el);
                 }
                 if (replace) {
-                    textarea.value = '';
-                    textarea.value = value;
+                    msg_compose_el.textContent = value;
                 } else {
-                    let existing = textarea.value;
+                    let existing = msg_compose_el.textContent;
                     if (existing && (existing[existing.length-1] !== ' ')) {
                         existing = existing + ' ';
                     }
-                    textarea.value = '';
-                    textarea.value = existing+value+' ';
+                    msg_compose_el.textContent = existing+value+' ';
                 }
-                u.putCurserAtEnd(textarea);
+                u.placeCaret('end', msg_compose_el);
             },
 
             createEmojiPicker () {
@@ -1122,7 +1127,7 @@ converse.plugins.add('converse-chatview', {
                 ev.preventDefault();
                 ev.stopPropagation();
                 const target = ev.target.nodeName === 'IMG' ? ev.target.parentElement : ev.target;
-                this.insertIntoTextArea(target.getAttribute('data-emoji'));
+                this.insertIntoComposeArea(target.getAttribute('data-emoji'));
             },
 
             toggleEmojiMenu (ev) {
@@ -1259,9 +1264,9 @@ converse.plugins.add('converse-chatview', {
             }, 25, {'leading': true}),
 
             focus () {
-                const textarea_el = this.el.querySelector('.chat-textarea');
-                if (!_.isNull(textarea_el)) {
-                    textarea_el.focus();
+                const msg_compose_el = this.el.querySelector('.chat-textarea');
+                if (!_.isNull(msg_compose_el)) {
+                    msg_compose_el.focus();
                     this.emitFocused();
                 }
                 return this;

@@ -109,15 +109,15 @@
             spoiler_toggle.click();
 
             const textarea = view.el.querySelector('.chat-textarea');
-            textarea.value = 'This is the spoiler';
-            view.keyPressed({
+            textarea.textContent = 'This is the spoiler';
+            view.onKeyDown({
                 target: textarea,
                 preventDefault: _.noop,
                 keyCode: 13
             });
             await new Promise((resolve, reject) => view.once('messageInserted', resolve));
 
-            /* Test the XML stanza 
+            /* Test the XML stanza
              *
              * <message from="dummy@localhost/resource"
              *          to="max.frankfurter@localhost"
@@ -183,18 +183,18 @@
             spyOn(_converse.connection, 'send');
 
             const textarea = view.el.querySelector('.chat-textarea');
-            textarea.value = 'This is the spoiler';
+            textarea.textContent = 'This is the spoiler';
             const hint_input = view.el.querySelector('.spoiler-hint');
             hint_input.value = 'This is the hint';
 
-            view.keyPressed({
+            view.onKeyDown({
                 target: textarea,
                 preventDefault: _.noop,
                 keyCode: 13
             });
             await new Promise((resolve, reject) => view.once('messageInserted', resolve));
 
-            /* Test the XML stanza 
+            /* Test the XML stanza
              *
              * <message from="dummy@localhost/resource"
              *          to="max.frankfurter@localhost"

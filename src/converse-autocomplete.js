@@ -313,29 +313,35 @@ converse.plugins.add("converse-autocomplete", {
                     }
                     this.auto_completing = true;
                 } else if (ev.key === "Backspace") {
-                    const word = u.getCurrentWord(ev.target, ev.target.selectionEnd-1);
-                    if (this.ac_triggers.includes(word[0])) {
+                    const word = u.getCurrentWord(ev.target);
+                    if (word !== null && this.ac_triggers.includes(word[0])) {
                         this.auto_completing = true;
                     }
                 }
             }
 
             evaluate (ev) {
-                const selecting = this.selected && ev && (
-                    ev.keyCode === _converse.keycodes.UP_ARROW ||
-                    ev.keyCode === _converse.keycodes.DOWN_ARROW
-                );
-                if (!this.auto_evaluate && !this.auto_completing || selecting) {
+                const selecting = () => {
+                    return (
+                        this.selected && ev && (
+                        ev.keyCode === _converse.keycodes.UP_ARROW ||
+                        ev.keyCode === _converse.keycodes.DOWN_ARROW)
+                    );
+                }
+                if (!this.auto_evaluate && !this.auto_completing || selecting()) {
                     return;
                 }
-
                 const list = typeof this._list === "function" ? this._list() : this._list;
                 if (list.length === 0) {
                     return;
                 }
+                let value = this.match_current_word ?
+                    u.getCurrentWord(this.input) :
+                    u.getElementValue(this.input);
 
-                let value = this.match_current_word ? u.getCurrentWord(this.input) : this.input.value;
-
+                if (value === null) {
+                    return;
+                }
                 let ignore_min_chars = false;
                 if (this.ac_triggers.includes(value[0]) && !this.include_triggers.includes(ev.key)) {
                     ignore_min_chars = true;

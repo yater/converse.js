@@ -470,7 +470,7 @@
                     var items = picker.querySelectorAll('.emoji-picker li');
                     items[0].click()
                     expect(view.insertEmoji).toHaveBeenCalled();
-                    expect(view.el.querySelector('textarea.chat-textarea').value).toBe(':grinning: ');
+                    expect(view.el.querySelector('.chat-textarea').textContent).toBe(':grinning: ');
                     toolbar.querySelector('li.toggle-smiley').click(); // Close the panel again
                     done();
                 }));
@@ -638,8 +638,8 @@
                         expect(view.model.get('chat_state')).toBe('active');
                         spyOn(_converse.connection, 'send');
                         spyOn(_converse.api, "trigger");
-                        view.keyPressed({
-                            target: view.el.querySelector('textarea.chat-textarea'),
+                        view.onKeyDown({
+                            target: view.el.querySelector('.chat-textarea'),
                             keyCode: 1
                         });
                         expect(view.model.get('chat_state')).toBe('composing');
@@ -653,8 +653,8 @@
                         expect(stanza.childNodes[2].tagName).toBe('no-permanent-store');
 
                         // The notification is not sent again
-                        view.keyPressed({
-                            target: view.el.querySelector('textarea.chat-textarea'),
+                        view.onKeyDown({
+                            target: view.el.querySelector('.chat-textarea'),
                             keyCode: 1
                         });
                         expect(view.model.get('chat_state')).toBe('composing');
@@ -768,8 +768,8 @@
                         spyOn(_converse.connection, 'send');
                         spyOn(view, 'setChatState').and.callThrough();
                         expect(view.model.get('chat_state')).toBe('active');
-                        view.keyPressed({
-                            target: view.el.querySelector('textarea.chat-textarea'),
+                        view.onKeyDown({
+                            target: view.el.querySelector('.chat-textarea'),
                             keyCode: 1
                         });
                         expect(view.model.get('chat_state')).toBe('composing');
@@ -792,15 +792,15 @@
                         // Test #359. A paused notification should not be sent
                         // out if the user simply types longer than the
                         // timeout.
-                        view.keyPressed({
-                            target: view.el.querySelector('textarea.chat-textarea'),
+                        view.onKeyDown({
+                            target: view.el.querySelector('.chat-textarea'),
                             keyCode: 1
                         });
                         expect(view.setChatState).toHaveBeenCalled();
                         expect(view.model.get('chat_state')).toBe('composing');
 
-                        view.keyPressed({
-                            target: view.el.querySelector('textarea.chat-textarea'),
+                        view.onKeyDown({
+                            target: view.el.querySelector('.chat-textarea'),
                             keyCode: 1
                         });
                         expect(view.model.get('chat_state')).toBe('composing');
@@ -899,8 +899,8 @@
                         await test_utils.waitUntil(() => view.model.get('chat_state') === 'active', 1000);
                         console.log('chat_state set to active');
                         expect(view.model.get('chat_state')).toBe('active');
-                        view.keyPressed({
-                            target: view.el.querySelector('textarea.chat-textarea'),
+                        view.onKeyDown({
+                            target: view.el.querySelector('.chat-textarea'),
                             keyCode: 1
                         });
                         await test_utils.waitUntil(() => view.model.get('chat_state') === 'composing', 500);
@@ -1074,9 +1074,9 @@
                 spyOn(window, 'confirm').and.callFake(function () {
                     return true;
                 });
-                view.el.querySelector('.chat-textarea').value = message;
-                view.keyPressed({
-                    target: view.el.querySelector('textarea.chat-textarea'),
+                view.el.querySelector('.chat-textarea').textContent = message;
+                view.onKeyDown({
+                    target: view.el.querySelector('.chat-textarea'),
                     preventDefault: _.noop,
                     keyCode: 13
                 });

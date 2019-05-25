@@ -2,6 +2,7 @@ $mobile_landscape_height: 450px !default;
 $mobile_portrait_length: 480px !default;
 
 #conversejs, #conversejs-bg, .converse-fullscreen {
+    --disabled-color: #EEE;
     --subdued-color: #A8ABA1;
 
     --green: #3AA569;

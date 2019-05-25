@@ -834,7 +834,7 @@ converse.plugins.add('converse-muc-views', {
                 /* When an occupant is clicked, insert their nickname into
                  * the chat textarea input.
                  */
-                this.insertIntoTextArea(ev.target.textContent);
+                this.insertIntoComposeArea(ev.target.textContent);
             },
 
             handleChatStateNotification (message) {
