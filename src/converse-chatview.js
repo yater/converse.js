@@ -25,6 +25,7 @@ import tpl_new_day from "templates/new_day.html";
 import tpl_spinner from "templates/spinner.html";
 import tpl_spoiler_button from "templates/spoiler_button.html";
 import tpl_status_message from "templates/status_message.html";
+import tpl_styling_markup from "templates/styling_markup.html";
 import tpl_toolbar from "templates/toolbar.html";
 import tpl_toolbar_fileupload from "templates/toolbar_fileupload.html";
 import tpl_user_details_modal from "templates/user_details_modal.html";
@@ -333,7 +334,9 @@ converse.plugins.add('converse-chatview', {
                 'click .toggle-smiley': 'toggleEmojiMenu',
                 'click .upload-file': 'toggleFileUpload',
                 'input .chat-textarea': 'inputChanged',
-                'keydown .chat-textarea': 'keyPressed',
+                'keypress .chat-textarea': 'onKeyPressed',
+                'keydown .chat-textarea': 'onKeyDown',
+                'keyup .chat-textarea': 'onKeyUp',
                 'dragover .chat-textarea': 'onDragOver',
                 'drop .chat-textarea': 'onDrop',
             },
@@ -948,14 +951,63 @@ converse.plugins.add('converse-chatview', {
                 this.setChatState(_converse.ACTIVE, {'silent': true});
             },
 
-            keyPressed (ev) {
+
+            onKeyUp (ev) {
+                this.insertStylingMarkup(ev);
+                if (this.commands && this.commands.length) {
+                    console.log(this.commands.join(' '));
+                }
+                if (this.chars.length) {
+                    this.chars.forEach(char => {
+                        document.execCommand('delete');
+                        document.execCommand('insertHTML', false, tpl_styling_markup({'char': char}));
+                        this.chars = [];
+                        document.execCommand('delete');
+                        // document.execCommand('forwardDelete');
+                    });
+                    if (this.commands.length) {
+                        this.commands.forEach(c => document.execCommand(c));
+                        this.commands = [];
+                    }
+                }
+            },
+
+
+            onKeyPressed (ev) {
+                const char = String.fromCharCode(ev.keyCode);
+                const el = ev.target;
+                this.commands = [];
+                this.chars = [];
+                if (char === '*') {
+                    if (!document.queryCommandState('bold')) {
+                        this.commands.push('bold');
+                    }
+                    if (document.queryCommandState('italic')) {
+                        this.commands.push('italic');
+                    }
+                    this.chars.push(char);
+                }
+                if (char === '_') {
+                    if (!document.queryCommandState('italic')) {
+                        this.commands.push('italic');
+                    }
+                    if (document.queryCommandState('bold')) {
+                        this.commands.push('bold');
+                    }
+                    this.chars.push(char);
+                    ev.preventDefault();
+                }
+            },
+
+
+            onKeyDown (ev) {
                 /* Event handler for when a key is pressed in a chat box textarea.
                  */
+                this.insertStylingMarkup(ev);
                 if (ev.ctrlKey) {
                     // When ctrl is pressed, no chars are entered into the textarea.
                     return;
                 }
-
                 if (!ev.shiftKey && !ev.altKey) {
                     if (ev.keyCode === _converse.keycodes.FORWARD_SLASH) {
                         // Forward slash is used to run commands. Nothing to do here.
@@ -981,19 +1033,53 @@ converse.plugins.add('converse-chatview', {
                         }
                     }
                 }
-                if (_.includes([
-                            _converse.keycodes.SHIFT,
-                            _converse.keycodes.META,
-                            _converse.keycodes.META_RIGHT,
-                            _converse.keycodes.ESCAPE,
-                            _converse.keycodes.ALT]
-                        , ev.keyCode)) {
+                const codes = [
+                    _converse.keycodes.SHIFT,
+                    _converse.keycodes.META,
+                    _converse.keycodes.META_RIGHT,
+                    _converse.keycodes.ESCAPE,
+                    _converse.keycodes.ALT
+                ];
+                if (codes.includes(ev.keyCode)) {
                     return;
                 }
                 if (this.model.get('chat_state') !== _converse.COMPOSING) {
                     // Set chat state to composing if keyCode is not a forward-slash
                     // (which would imply an internal command and not a message).
                     this.setChatState(_converse.COMPOSING);
+                }
+            },
+
+            closeStylingMarkup (el) {
+                el = el || this.el.querySelector('.chat-textarea');
+                const charmap = {};
+                if (document.queryCommandState('bold')) {
+                    charmap[el.textContent.lastIndexOf('*')] = tpl_styling_markup({'char': '*'});
+                    u.placeCaret('end', el);
+                    document.execCommand('bold');
+                }
+                if (document.queryCommandState('italic')) {
+                    charmap[el.textContent.lastIndexOf('_')] = tpl_styling_markup({'char': '_'});
+                    u.placeCaret('end', el);
+                    document.execCommand('italic');
+                }
+                // Remove trailing whitespaces
+                while (el.textContent.endsWith(' ')) {
+                    document.execCommand('delete');
+                }
+                // Add closing chars (in the right order)
+                Object.keys(charmap).sort().forEach(k => document.execCommand('insertHTML', false, charmap[k]));
+            },
+
+            insertStylingMarkup (ev) {
+                if (ev.ctrlKey && ev.key === 'b') {
+                    if (document.queryCommandState('bold') === false) {
+                        document.execCommand('insertHTML', false, tpl_styling_markup({'char': '*'}));
+                    }
+                } else if (ev.ctrlKey && ev.key === 'i') {
+                    if (document.queryCommandState('italic') === false) {
+                        document.execCommand('insertHTML', false, tpl_styling_markup({'char': '_'}));
+                    }
                 }
             },
 
@@ -1093,19 +1179,16 @@ converse.plugins.add('converse-chatview', {
 
             insertIntoComposeArea (value, replace=false, correcting=false) {
                 const msg_compose_el = this.el.querySelector('.chat-textarea');
+                this.closeStylingMarkup(msg_compose_el);
                 if (correcting) {
                     u.addClass('correcting', msg_compose_el);
                 } else {
                     u.removeClass('correcting', msg_compose_el);
                 }
                 if (replace) {
-                    msg_compose_el.textContent = value;
+                    msg_compose_el.innerText = value;
                 } else {
-                    let existing = msg_compose_el.textContent;
-                    if (existing && (existing[existing.length-1] !== ' ')) {
-                        existing = existing + ' ';
-                    }
-                    msg_compose_el.textContent = existing+value+' ';
+                    document.execCommand('insertText', false, ` ${value}`);
                 }
                 u.placeCaret('end', msg_compose_el);
             },

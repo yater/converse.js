@@ -40,8 +40,7 @@ const config = {
                     // a single variable name with the variable setting. This can
                     // significantly improve the speed at which a template is able
                     // to render.
-                    "variable": 'o',
-                    "prependFilenameComment": __dirname
+                    "variable": 'o'
                 }
             }]
         },

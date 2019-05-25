@@ -4,6 +4,13 @@
             font-weight: bold;
         }
     }
+
+    .styling-markup {
+        font-weight: normal;
+        font-style: normal;
+        color: var(--subdued-color);
+    }
+
     .message {
         .mention {
             font-weight: bold;
