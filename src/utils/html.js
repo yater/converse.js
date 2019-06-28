@@ -268,7 +268,7 @@ u.addClass = function (className, el) {
 }
 
 u.removeClass = function (className, el) {
-    if (el instanceof Element) {
+    if (el instanceof Element && u.hasClass(className, el)) {
         el.classList.remove(className);
     }
     return el;

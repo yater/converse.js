@@ -370,6 +370,7 @@ converse.plugins.add('converse-chatview', {
                 this.scrollDown = _.debounce(this._scrollDown, 100);
                 this.markScrolled = _.debounce(this._markScrolled, 100);
                 this.show = _.debounce(this._show, 500, {'leading': true});
+                this.showMessages = _.debounce(this._showMessages, 100);
             },
 
             render () {
@@ -682,7 +683,6 @@ converse.plugins.add('converse-chatview', {
                         // should maintain our current scroll position.
                         if (this.content.scrollTop === 0 || this.model.get('top_visible_message')) {
                             const top_visible_message = this.model.get('top_visible_message') || next_msg_el;
-
                             this.model.set('top_visible_message', top_visible_message);
                             this.content.scrollTop = top_visible_message.offsetTop - 30;
                         }
@@ -716,13 +716,19 @@ converse.plugins.add('converse-chatview', {
             },
 
             /**
-             * Given a view representing a message, insert it into the
-             * content area of the chat box.
+             * Given a {@link _converse.Message} instance, insert it into the content area of the
+             * {@link _converse.ChatBoxView} or {@link _converse.ChatRoomView}.
+             *
              * @private
              * @method _converse.ChatBoxView#insertMessage
-             * @param { Backbone.View } message - The message Backbone.View
+             * @param { _converse.Message } message
              */
-            insertMessage (view) {
+            async insertMessage (message) {
+                // Clear chat state notifications
+                sizzle(`.chat-state-notification[data-csn="${message.get('from')}"]`, this.content).forEach(u.removeElement);
+
+                const view = this.add(message.get('id'), new _converse.MessageView({'model': message}));
+                await view.render();
                 if (view.model.get('type') === 'error') {
                     const previous_msg_el = this.content.querySelector(`[data-msgid="${view.model.get('msgid')}"]`);
                     if (previous_msg_el) {
@@ -730,9 +736,8 @@ converse.plugins.add('converse-chatview', {
                         return this.trigger('messageInserted', view.el);
                     }
                 }
-                const current_msg_date = dayjs(view.model.get('time')).toDate() || new Date(),
-                      previous_msg_date = this.getLastMessageDate(current_msg_date);
-
+                const current_msg_date = dayjs(view.model.get('time')).toDate() || new Date();
+                const previous_msg_date = this.getLastMessageDate(current_msg_date);
                 if (_.isNull(previous_msg_date)) {
                     this.content.insertAdjacentElement('afterbegin', view.el);
                 } else {
@@ -746,8 +751,26 @@ converse.plugins.add('converse-chatview', {
                     previous_msg_el.insertAdjacentElement('afterend', view.el);
                     this.markFollowups(view.el);
                 }
-                return this.trigger('messageInserted', view.el);
+
+                if (u.isNewMessage(message)) {
+                    if (message.get('sender') === 'me') {
+                        // We remove the "scrolled" flag so that the chat area
+                        // gets scrolled down. We always want to scroll down
+                        // when the user writes a message as opposed to when a
+                        // message is received.
+                        this.model.set('scrolled', false);
+                    } else if (this.model.get('scrolled', true) && !u.isOnlyChatStateNotification(message)) {
+                        this.showNewMessagesIndicator();
+                    }
+                }
+                this.insertDayIndicator(view.el);
+                this.setScrollPosition(view.el);
+                if (message.get('correcting')) {
+                    this.insertIntoTextArea(message.get('message'), true, true);
+                }
+                this.trigger('messageInserted', view.el);
             },
+
 
             /**
              * Given a message element, determine wether it should be
@@ -788,44 +811,19 @@ converse.plugins.add('converse-chatview', {
                 }
             },
 
-            /**
-             * Inserts a chat message into the content area of the chat box.
-             * Will also insert a new day indicator if the message is on a different day.
-             * @private
-             * @method _converse.ChatBoxView#showMessage
-             * @param { _converse.Message } message - The message object
-             */
-            async showMessage (message) {
-                const view = this.add(message.get('id'), new _converse.MessageView({'model': message}));
-                await view.render();
 
-                // Clear chat state notifications
-                sizzle(`.chat-state-notification[data-csn="${message.get('from')}"]`, this.content).forEach(u.removeElement);
+            _showMessages () {
+                // This method gets debounced, so it only gets executed once
+                // per batch of messages.
+                Object.values(this.getAll()).forEach(view => u.removeClass('hidden', view.el));
 
-                this.insertMessage(view);
-                this.insertDayIndicator(view.el);
-                this.setScrollPosition(view.el);
-
-                if (u.isNewMessage(message)) {
-                    if (message.get('sender') === 'me') {
-                        // We remove the "scrolled" flag so that the chat area
-                        // gets scrolled down. We always want to scroll down
-                        // when the user writes a message as opposed to when a
-                        // message is received.
-                        this.model.set('scrolled', false);
-                    } else if (this.model.get('scrolled', true) && !u.isOnlyChatStateNotification(message)) {
-                        this.showNewMessagesIndicator();
-                    }
-                }
                 if (this.shouldShowOnTextMessage()) {
                     this.show();
                 } else {
                     this.scrollDown();
                 }
-                if (message.get('correcting')) {
-                    this.insertIntoTextArea(message.get('message'), true, true);
-                }
             },
+
 
             /**
              * Handler that gets called when a new message object is created.
@@ -843,7 +841,8 @@ converse.plugins.add('converse-chatview', {
                     // Ignore archived or delayed messages without any text to show.
                     return message.destroy();
                 }
-                await this.showMessage(message);
+                await this.insertMessage(message);
+                this.showMessages();
                 /**
                  * Triggered once a message has been added to a chatbox.
                  * @event _converse#messageAdded

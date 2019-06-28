@@ -4,11 +4,47 @@
     var _ = converse.env._;
     var $iq = converse.env.$iq;
     var $pres = converse.env.$pres;
+    var $msg = converse.env.$msg;
     var u = converse.env.utils;
 
     describe("Profiling", function() {
 
-        it("shows users currently present in the groupchat",
+        it("loads lots of messages in a chat",
+            mock.initConverse(
+                null, ['rosterGroupsFetched', 'chatBoxesFetched'], {},
+                async function (done, _converse) {
+
+            await test_utils.openAndEnterChatRoom(_converse, 'lounge', 'montague.lit', 'romeo');
+            const view = _converse.api.chatviews.get('lounge@montague.lit');
+            const chat_content = view.el.querySelector('.chat-content');
+            await test_utils.waitUntil(() => chat_content.querySelector('.message'));
+            await test_utils.waitUntil(() => u.isVisible(chat_content.querySelector('.message')));
+            await test_utils.waitUntil(() => !view.el.querySelector('.spinner'));
+
+            const nick = mock.chatroom_names[0];
+            const message = `First Post!`;
+            const msg = $msg({
+                    from: 'lounge@montague.lit/'+nick,
+                    id: u.getUniqueId(),
+                    to: 'romeo@montague.lit',
+                    type: 'groupchat'
+                }).c('body').t(message).tree();
+            await view.model.onMessage(msg);
+            await new Promise((resolve, reject) => view.once('messageInserted', resolve));
+            _.range(0, 3000).forEach(i => {
+                const message = `Message ${i.toString().padStart(5, '0')}`;
+                const msg = $msg({
+                        from: 'lounge@montague.lit/'+nick,
+                        id: u.getUniqueId(),
+                        to: 'romeo@montague.lit',
+                        type: 'groupchat'
+                    }).c('body').t(message).tree();
+                view.model.onMessage(msg);
+            });
+            done();
+        }));
+
+        xit("shows users currently present in the groupchat",
             mock.initConverse(
                 null, ['rosterGroupsFetched'], {'muc_show_join_leave': false},
                 async function (done, _converse) {

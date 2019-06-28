@@ -255,7 +255,7 @@
         return async done => {
             const _converse = await initConverse(settings, spies);
             function _done () {
-                _converse.api.user.logout();
+                // _converse.api.user.logout();
                 done();
             }
             const promises = _.map(promise_names, _converse.api.waitUntil);
