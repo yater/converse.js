@@ -1,5 +1,9 @@
 # Changelog
 
+# Cherry-pick: 9c024757b6de5b408afe7204e0c2d1fc9800b15f
+
+- Bugfix: `TypeError: o.getAttribute is not a function converse-chatview.js` (can cause messages to not appear).
+
 ## 5.0.0 (2019-08-08)
 - BOSH support has been moved to a plugin.
 - Support for XEP-0410 to check whether we're still present in a room
