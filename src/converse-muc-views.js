@@ -629,6 +629,7 @@ converse.plugins.add('converse-muc-views', {
             events: {
                 'change input.fileupload': 'onFileSelection',
                 'click .chat-msg__action-edit': 'onMessageEditButtonClicked',
+                'click .chat-msg__action-retract': 'onMessageRetractButtonClicked',
                 'click .chatbox-navback': 'showControlBox',
                 'click .close-chatbox-button': 'close',
                 'click .configure-chatroom-button': 'getAndRenderConfigurationForm',
@@ -768,6 +769,27 @@ converse.plugins.add('converse-muc-views', {
             onKeyUp (ev) {
                 this.mention_auto_complete.evaluate(ev);
                 return _converse.ChatBoxView.prototype.onKeyUp.call(this, ev);
+            },
+
+            onMessageRetractButtonClicked (ev) {
+                ev.preventDefault();
+                const reason = prompt(__('You are about to retract this message. '+
+                                         'You may optionally include a message, '+
+                                         'explaining the reason for the invitation.'));
+                if (reason !== null) {
+                    const msg_el = u.ancestor(ev.target, '.message');
+                    const msgid = msg_el.getAttribute('data-msgid');
+                    const time = msg_el.getAttribute('data-isodate');
+                    const message = this.model.messages.findWhere({msgid, time});
+                    const iq = $iq({'to': this.model.get('jid'), 'type': "set"})
+                        .c("apply-to", {
+                            'id': message.get(`stanza-id ${message.get('from')}`),
+                            'xmlns': Strophe.NS.FASTEN
+                        }).c('moderate', {xmlns: Strophe.NS.MODERATE})
+                            .c('retract', {xmlns: Strophe.NS.RETRACT}).up()
+                            .c('reason').t(reason);
+                    _converse.api.sendIQ(iq)
+                }
             },
 
             showModeratorToolsModal (affiliation) {
@@ -1365,17 +1387,15 @@ converse.plugins.add('converse-muc-views', {
                 const message = this.model.get('password_validation_message');
                 this.model.save('password_validation_message', undefined);
 
-                if (!this.password_form) {
+                if (this.password_form) {
+                    this.password_form.model.set('validation_message', message);
+                } else {
                     this.password_form = new _converse.MUCPasswordForm({
-                        'model': new Backbone.Model({
-                            'validation_message': message
-                        }),
-                        'chatroomview': this,
+                        'model': new Backbone.Model({'validation_message': message}),
+                        'chatroomview': this
                     });
                     const container_el = this.el.querySelector('.chatroom-body');
                     container_el.insertAdjacentElement('beforeend', this.password_form.el);
-                } else {
-                    this.password_form.model.set('validation_message', message);
                 }
                 u.showElement(this.password_form.el);
                 this.model.save('connection_status', converse.ROOMSTATUS.PASSWORD_REQUIRED);

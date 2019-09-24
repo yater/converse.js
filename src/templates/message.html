@@ -33,7 +33,12 @@
             {[ if (o.edited) { ]} <i title="{{{o.__('This message has been edited')}}}" class="fa fa-edit chat-msg__edit-modal"></i> {[ } ]}
             {[ if (o.editable) { ]}
                 <div class="chat-msg__actions">
-                    <button class="chat-msg__action chat-msg__action-edit fa fa-pencil-alt" title="{{{o.__('Edit this message')}}}"></button>
+                    {[ if (o.sender === 'me') { ]}
+                        <button class="chat-msg__action chat-msg__action-edit fa fa-pencil-alt" title="{{{o.__('Edit this message')}}}"></button>
+                    {[ } ]}
+                    {[ if (o.sender === 'me' || o.is_groupchat_message && true) { ]}
+                        <button class="chat-msg__action chat-msg__action-retract fa fa-trash-alt" title="{{{o.__('Retract this message')}}}"></button>
+                    {[ } ]}
                 </div>
             {[ } ]}
         </div>

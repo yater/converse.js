@@ -11,6 +11,59 @@
 
     describe("A Groupchat Message", function () {
 
+        it("can be retracted by a moderator",
+            mock.initConverse(
+                null, ['rosterGroupsFetched', 'chatBoxesFetched'], {},
+                async function (done, _converse) {
+
+            const muc_jid = 'lounge@montague.lit';
+            await test_utils.openAndEnterChatRoom(_converse, muc_jid, 'romeo');
+            const view = _converse.api.chatviews.get(muc_jid);
+            const occupant = view.model.getOwnOccupant();
+            expect(occupant.get('role')).toBe('moderator');
+
+            const received_stanza = u.toStanza(`
+                <message to='${_converse.jid}' from='${muc_jid}/mallory' type='groupchat' id='${_converse.connection.getUniqueId()}'>
+                    <body>Visit this site to get free Bitcoin!</body>
+                </message>
+            `);
+            await view.model.onMessage(received_stanza);
+            await new Promise((resolve, reject) => view.once('messageInserted', resolve));
+            const reason = "This content is inappropriate for this forum!"
+            spyOn(window, 'prompt').and.callFake(() => reason);
+            view.el.querySelector('.chat-msg__content .chat-msg__action-retract').click();
+            const sent_IQs = _converse.connection.IQ_stanzas;
+            const stanza = await u.waitUntil(() => sent_IQs.filter(iq => iq.querySelector('iq apply-to[xmlns="urn:xmpp:fasten:0"]')).pop());
+            expect(window.prompt).toHaveBeenCalled();
+            expect(Strophe.serialize(stanza)).toBe(
+                `<iq id="${stanza.getAttribute('id')}" to="${muc_jid}" type="set" xmlns="jabber:client">`+
+                    `<apply-to xmlns="urn:xmpp:fasten:0">`+
+                        `<moderate xmlns="urn:xmpp:message-moderate:0">`+
+                            `<retract xmlns="urn:xmpp:message-retract:0"/>`+
+                            `<reason>This content is inappropriate for this forum!</reason>`+
+                        `</moderate>`+
+                    `</apply-to>`+
+                `</iq>`);
+
+            // The server responds with a retraction message
+
+            const message = view.model.messages.at(0);
+            const stanza_id = message.get(`stanza-id ${message.get('from')}`);
+            const retraction = u.toStanza(`
+                <message type="groupchat" id='retraction-id-1' from='room@muc.example.com' to="juliet@capulet.example/balcony">
+                    <apply-to id="${stanza_id}" xmlns="urn:xmpp:fasten:0">
+                        <moderated by='${_converse.bare_jid}' xmlns='urn:xmpp:message-moderate:0'>
+                        <retract xmlns='urn:xmpp:message-retract:0' />
+                        <reason>${reason}</reason>
+                        </moderated>
+                    </apply-to>
+                </message>`);
+            _converse.connection._dataRecv(test_utils.createRequest(retraction));
+            await u.waitUntil(() => message.get('retracted'));
+            done();
+        }));
+
+
         it("is rejected if it's an unencapsulated forwarded message",
             mock.initConverse(
                 ['rosterGroupsFetched', 'chatBoxesFetched'], {},
