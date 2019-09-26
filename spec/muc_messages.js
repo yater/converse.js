@@ -25,6 +25,7 @@
             const received_stanza = u.toStanza(`
                 <message to='${_converse.jid}' from='${muc_jid}/mallory' type='groupchat' id='${_converse.connection.getUniqueId()}'>
                     <body>Visit this site to get free Bitcoin!</body>
+                    <stanza-id xmlns='urn:xmpp:sid:0' id='stanza-id-1' by='${muc_jid}'/>
                 </message>
             `);
             await view.model.onMessage(received_stanza);
