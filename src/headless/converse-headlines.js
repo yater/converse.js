@@ -26,31 +26,13 @@ converse.plugins.add('converse-headlines', {
      */
     dependencies: ["converse-chat"],
 
-    overrides: {
-        // Overrides mentioned here will be picked up by converse.js's
-        // plugin architecture they will replace existing methods on the
-        // relevant objects or classes.
-        //
-        // New functions which don't exist yet can also be added.
-
-        ChatBoxes: {
-            model (attrs, options) {
-                const { _converse } = this.__super__;
-                if (attrs.type == _converse.HEADLINES_TYPE) {
-                    return new _converse.HeadlinesBox(attrs, options);
-                } else {
-                    return this.__super__.model.apply(this, arguments);
-                }
-            },
-        }
-    },
-
 
     initialize () {
         /* The initialize function gets called as soon as the plugin is
          * loaded by converse.js's plugin machinery.
          */
         const { _converse } = this;
+
 
         _converse.HeadlinesBox = _converse.ChatBox.extend({
             defaults () {

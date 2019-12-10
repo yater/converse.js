@@ -65,8 +65,19 @@ converse.plugins.add('converse-chatboxes', {
         _converse.ChatBoxes = _converse.Collection.extend({
             comparator: 'time_opened',
 
-            model (attrs, options) {
-                return new _converse.ChatBox(attrs, options);
+            // XXX: setting function to `model` attribute in order to work
+            // around a backbone bug which expects `model` to have a prototype
+            // attribute, which isn't the case with the newer syntax.
+            model: function (attrs, options) {
+                if (attrs && attrs.type == _converse.CHATROOMS_TYPE) {
+                    return new _converse.ChatRoom(attrs, options);
+                } else if (attrs.type == _converse.HEADLINES_TYPE) {
+                    return new _converse.HeadlinesBox(attrs, options);
+                } else if (attrs && attrs.id == 'controlbox') {
+                    return new _converse.ControlBox(attrs, options);
+                } else {
+                    return new _converse.ChatBox(attrs, options);
+                }
             },
 
             onChatBoxesFetched (collection) {

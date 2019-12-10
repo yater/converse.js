@@ -73,18 +73,7 @@ converse.ROOMSTATUS = {
 
 
 converse.plugins.add('converse-muc', {
-    /* Optional dependencies are other plugins which might be
-     * overridden or relied upon, and therefore need to be loaded before
-     * this plugin. They are called "optional" because they might not be
-     * available, in which case any overrides applicable to them will be
-     * ignored.
-     *
-     * It's possible however to make optional dependencies non-optional.
-     * If the setting "strict_plugin_dependencies" is set to true,
-     * an error will be raised if the plugin is not found.
-     *
-     * NB: These plugins need to have already been loaded via require.js.
-     */
+
     dependencies: ["converse-chatboxes", "converse-chat", "converse-disco", "converse-controlbox"],
 
     overrides: {
@@ -93,17 +82,6 @@ converse.plugins.add('converse-muc', {
             const groupchats = this.chatboxes.where({'type': _converse.CHATROOMS_TYPE});
             groupchats.forEach(gc => u.safeSave(gc, {'connection_status': converse.ROOMSTATUS.DISCONNECTED}));
             this.__super__.tearDown.call(this, arguments);
-        },
-
-        ChatBoxes: {
-            model (attrs, options) {
-                const { _converse } = this.__super__;
-                if (attrs && attrs.type == _converse.CHATROOMS_TYPE) {
-                    return new _converse.ChatRoom(attrs, options);
-                } else {
-                    return this.__super__.model.apply(this, arguments);
-                }
-            },
         }
     },
 

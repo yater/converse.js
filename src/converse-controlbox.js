@@ -83,17 +83,6 @@ converse.plugins.add('converse-controlbox', {
         //
         // New functions which don't exist yet can also be added.
 
-        ChatBoxes: {
-            model (attrs, options) {
-                const { _converse } = this.__super__;
-                if (attrs && attrs.id == 'controlbox') {
-                    return new _converse.ControlBox(attrs, options);
-                } else {
-                    return this.__super__.model.apply(this, arguments);
-                }
-            }
-        },
-
         ChatBoxViews: {
             closeAllChatBoxes () {
                 const { _converse } = this.__super__;
