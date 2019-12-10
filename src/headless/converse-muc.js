@@ -299,6 +299,15 @@ converse.plugins.add('converse-muc', {
         });
 
 
+        const MUCSession = Backbone.Model.extend({
+            defaults () {
+                return {
+                    'connection_status': converse.ROOMSTATUS.DISCONNECTED
+                }
+            }
+        });
+
+
         /**
          * Collection which stores MUC messages
          * @class
@@ -334,7 +343,6 @@ converse.plugins.add('converse-muc', {
 
                     'bookmarked': false,
                     'chat_state': undefined,
-                    'connection_status': converse.ROOMSTATUS.DISCONNECTED,
                     'description': '',
                     'hidden': ['mobile', 'fullscreen'].includes(_converse.view_mode),
                     'message_type': 'groupchat',
@@ -349,12 +357,18 @@ converse.plugins.add('converse-muc', {
 
             async initialize() {
                 this.initialized = u.getResolveablePromise();
+
+                const id = `muc.session-${this.get('jid')}`;
+                this.session = new MUCSession({id});
+                this.session.browserStorage = _converse.createStore(id, "session");
+                await new Promise(r => this.session.fetch({'success': r, 'error': r}));
+
                 this.setVCard();
                 this.set('box_id', `box-${btoa(this.get('jid'))}`);
 
                 this.initFeatures(); // sendChatState depends on this.features
                 this.on('change:chat_state', this.sendChatState, this);
-                this.on('change:connection_status', this.onConnectionStatusChanged, this);
+                this.session.on('change:connection_status', this.onConnectionStatusChanged, this);
 
                 this.initMessages();
                 this.initOccupants();
@@ -382,7 +396,7 @@ converse.plugins.add('converse-muc', {
              * @returns { Boolean } Returns `true` if we're still joined, otherwise returns `false`.
              */
             async restoreFromCache () {
-                if (this.get('connection_status') === converse.ROOMSTATUS.ENTERED && await this.isJoined()) {
+                if (this.session.get('connection_status') === converse.ROOMSTATUS.ENTERED && await this.isJoined()) {
                     // We've restored the room from cache and we're still joined.
                     await new Promise(resolve => this.features.fetch({'success': resolve, 'error': resolve}));
                     await this.fetchOccupants();
@@ -402,7 +416,7 @@ converse.plugins.add('converse-muc', {
              * @param { String } [password] - Optional password, if required by the groupchat.
              */
             async join (nick, password) {
-                if (this.get('connection_status') === converse.ROOMSTATUS.ENTERED) {
+                if (this.session.get('connection_status') === converse.ROOMSTATUS.ENTERED) {
                     // We have restored a groupchat from session storage,
                     // so we don't send out a presence stanza again.
                     return this;
@@ -410,7 +424,7 @@ converse.plugins.add('converse-muc', {
                 await this.refreshRoomFeatures();
                 nick = await this.getAndPersistNickname(nick);
                 if (!nick) {
-                    u.safeSave(this, {'connection_status': converse.ROOMSTATUS.NICKNAME_REQUIRED});
+                    u.safeSave(this.session, {'connection_status': converse.ROOMSTATUS.NICKNAME_REQUIRED});
                     if (_converse.muc_show_logs_before_join) {
                         await this.fetchMessages();
                     }
@@ -425,13 +439,13 @@ converse.plugins.add('converse-muc', {
                 if (password) {
                     stanza.cnode(Strophe.xmlElement("password", [], password));
                 }
-                this.save('connection_status', converse.ROOMSTATUS.CONNECTING);
+                this.session.save('connection_status', converse.ROOMSTATUS.CONNECTING);
                 _converse.api.send(stanza);
                 return this;
             },
 
             async clearCache () {
-                this.save('connection_status', converse.ROOMSTATUS.DISCONNECTED);
+                this.session.save('connection_status', converse.ROOMSTATUS.DISCONNECTED);
                 if (this.occupants.length) {
                     // Remove non-members when reconnecting
                     this.occupants.filter(o => !o.isMember()).forEach(o => o.destroy());
@@ -455,7 +469,7 @@ converse.plugins.add('converse-muc', {
             },
 
             async onConnectionStatusChanged () {
-                if (this.get('connection_status') === converse.ROOMSTATUS.ENTERED) {
+                if (this.session.get('connection_status') === converse.ROOMSTATUS.ENTERED) {
                     if (_converse.muc_fetch_members) {
                         await this.occupants.fetchMembers();
                     }
@@ -716,7 +730,7 @@ converse.plugins.add('converse-muc', {
                 if (_converse.api.connection.connected()) {
                     this.sendUnavailablePresence(exit_msg);
                 }
-                u.safeSave(this, {'connection_status': converse.ROOMSTATUS.DISCONNECTED});
+                u.safeSave(this.session, {'connection_status': converse.ROOMSTATUS.DISCONNECTED});
                 this.removeHandlers();
             },
 
@@ -855,7 +869,7 @@ converse.plugins.add('converse-muc', {
             sendChatState () {
                 if (!_converse.send_chat_state_notifications ||
                         !this.get('chat_state') ||
-                        this.get('connection_status') !== converse.ROOMSTATUS.ENTERED ||
+                        this.session.get('connection_status') !== converse.ROOMSTATUS.ENTERED ||
                         this.features.get('moderated') && this.getOwnRole() === 'visitor') {
                     return;
                 }
@@ -1739,7 +1753,7 @@ converse.plugins.add('converse-muc', {
             handleModifyError(pres) {
                 const text = get(pres.querySelector('error text'), 'textContent');
                 if (text) {
-                    if (this.get('connection_status') === converse.ROOMSTATUS.CONNECTING) {
+                    if (this.session.get('connection_status') === converse.ROOMSTATUS.CONNECTING) {
                         this.setDisconnectionMessage(text);
                     } else {
                         const attrs = {
@@ -1835,11 +1849,11 @@ converse.plugins.add('converse-muc', {
 
             setDisconnectionMessage (message, reason, actor) {
                 this.save({
-                    'connection_status': converse.ROOMSTATUS.DISCONNECTED,
                     'disconnection_message': message,
                     'disconnection_reason': reason,
                     'disconnection_actor': actor
                 });
+                this.session.save({'connection_status': converse.ROOMSTATUS.DISCONNECTED});
             },
 
 
@@ -1857,9 +1871,10 @@ converse.plugins.add('converse-muc', {
                     this.save({
                         'nickname_validation_message': __(
                             "The nickname you chose is reserved or "+
-                            "currently in use, please choose a different one."),
-                        'connection_status': converse.ROOMSTATUS.NICKNAME_REQUIRED
+                            "currently in use, please choose a different one."
+                        )
                     });
+                    this.session.save({'connection_status': converse.ROOMSTATUS.NICKNAME_REQUIRED});
                 }
             },
 
@@ -1880,10 +1895,8 @@ converse.plugins.add('converse-muc', {
                     this.handleModifyError(stanza);
                 } else if (error_type === 'auth') {
                     if (sizzle(`not-authorized[xmlns="${Strophe.NS.STANZAS}"]`, error).length) {
-                        this.save({
-                            'password_validation_message': reason || __("Password incorrect"),
-                            'connection_status': converse.ROOMSTATUS.PASSWORD_REQUIRED
-                        });
+                        this.save({'password_validation_message': reason || __("Password incorrect")});
+                        this.session.save({'connection_status': converse.ROOMSTATUS.PASSWORD_REQUIRED});
                     }
                     if (error.querySelector('registration-required')) {
                         const message = __('You are not on the member list of this groupchat.');
@@ -1903,11 +1916,8 @@ converse.plugins.add('converse-muc', {
                         const moved_jid = get(sizzle(`gone[xmlns="${Strophe.NS.STANZAS}"]`, error).pop(), 'textContent')
                             .replace(/^xmpp:/, '')
                             .replace(/\?join$/, '');
-                        this.save({
-                            'connection_status': converse.ROOMSTATUS.DESTROYED,
-                            'destroyed_reason': reason,
-                            'moved_jid': moved_jid
-                        });
+                        this.save({ moved_jid, 'destroyed_reason': reason});
+                        this.session.save({'connection_status': converse.ROOMSTATUS.DESTROYED});
                     } else if (error.querySelector('conflict')) {
                         this.onNicknameClash(stanza);
                     } else if (error.querySelector('item-not-found')) {
@@ -1939,8 +1949,8 @@ converse.plugins.add('converse-muc', {
                 if (stanza.querySelector("status[code='110']")) {
                     this.onOwnPresence(stanza);
                     if (this.getOwnRole() !== 'none' &&
-                            this.get('connection_status') === converse.ROOMSTATUS.CONNECTING) {
-                        this.save('connection_status', converse.ROOMSTATUS.CONNECTED);
+                            this.session.get('connection_status') === converse.ROOMSTATUS.CONNECTING) {
+                        this.session.save('connection_status', converse.ROOMSTATUS.CONNECTED);
                     }
                 } else {
                     this.updateOccupantsOnPresence(stanza);
@@ -1964,7 +1974,7 @@ converse.plugins.add('converse-muc', {
              */
             onOwnPresence (stanza) {
                 if (stanza.getAttribute('type') !== 'unavailable') {
-                    this.save('connection_status', converse.ROOMSTATUS.ENTERED);
+                    this.session.save('connection_status', converse.ROOMSTATUS.ENTERED);
                 }
                 this.updateOccupantsOnPresence(stanza);
 
@@ -2003,7 +2013,7 @@ converse.plugins.add('converse-muc', {
                         }
                     }
                 }
-                this.save({'connection_status': converse.ROOMSTATUS.ENTERED});
+                this.session.save({'connection_status': converse.ROOMSTATUS.ENTERED});
             },
 
             /**
@@ -2224,7 +2234,7 @@ converse.plugins.add('converse-muc', {
             }
             if (result === true) {
                 const chatroom = await openChatRoom(room_jid, {'password': x_el.getAttribute('password') });
-                if (chatroom.get('connection_status') === converse.ROOMSTATUS.DISCONNECTED) {
+                if (chatroom.session.get('connection_status') === converse.ROOMSTATUS.DISCONNECTED) {
                     _converse.chatboxes.get(room_jid).rejoin();
                 }
             }
@@ -2288,7 +2298,7 @@ converse.plugins.add('converse-muc', {
         /************************ BEGIN Event Handlers ************************/
         _converse.api.listen.on('beforeTearDown', () => {
             const groupchats = _converse.chatboxes.where({'type': _converse.CHATROOMS_TYPE});
-            groupchats.forEach(gc => u.safeSave(gc, {'connection_status': converse.ROOMSTATUS.DISCONNECTED}));
+            groupchats.forEach(muc => u.safeSave(muc.session, {'connection_status': converse.ROOMSTATUS.DISCONNECTED}));
         });
 
         _converse.api.listen.on('windowStateChanged', onWindowStateChanged);
@@ -2311,7 +2321,7 @@ converse.plugins.add('converse-muc', {
              */
             return _converse.chatboxes
                 .filter(m => (m.get('type') === _converse.CHATROOMS_TYPE))
-                .forEach(m => m.save({'connection_status': converse.ROOMSTATUS.DISCONNECTED}));
+                .forEach(m => m.session.save({'connection_status': converse.ROOMSTATUS.DISCONNECTED}));
         }
         _converse.api.listen.on('disconnected', disconnectChatRooms);
 
