@@ -392,16 +392,21 @@ converse.plugins.add('converse-disco', {
             }
         });
 
+        function clearDiscoCache () {
+            Array.from(_converse.disco_entities.models).forEach(e => e.features.clearSession());
+            Array.from(_converse.disco_entities.models).forEach(e => e.identities.clearSession());
+            Array.from(_converse.disco_entities.models).forEach(e => e.dataforms.clearSession());
+            Array.from(_converse.disco_entities.models).forEach(e => e.fields.clearSession());
+            _converse.disco_entities.clearSession();
+            delete _converse.disco_entities;
+        }
+
         _converse.api.listen.on('clearSession', () => {
             if (_converse.shouldClearCache() && _converse.disco_entities) {
-                Array.from(_converse.disco_entities.models).forEach(e => e.features.clearSession());
-                Array.from(_converse.disco_entities.models).forEach(e => e.identities.clearSession());
-                Array.from(_converse.disco_entities.models).forEach(e => e.dataforms.clearSession());
-                Array.from(_converse.disco_entities.models).forEach(e => e.fields.clearSession());
-                _converse.disco_entities.clearSession();
-                delete _converse.disco_entities;
+                clearDiscoCache();
             }
         });
+        _converse.api.listen.on('logout', clearDiscoCache);
 
 
         /************************ API ************************/

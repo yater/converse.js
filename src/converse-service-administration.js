@@ -42,7 +42,7 @@ converse.plugins.add('converse-service-administration', {
 
         _converse.ServiceAdministration = Backbone.Model.extend({
             async discoverSupport () {
-                const supported = await _converse.api.disco.supports(Strophe.NS.COMMANDS, _converse.bare_jid);
+                const supported = await _converse.api.disco.supports(Strophe.NS.COMMANDS, _converse.domain);
                 if (supported) {
                     const stanza = $iq({
                         'from': _converse.connection.jid,
@@ -51,26 +51,32 @@ converse.plugins.add('converse-service-administration', {
                         'type': 'get'
                     }).c('query', {
                         xmlns: Strophe.NS.DISCO_ITEMS,
-                        node: 'announce'
-                    }).up();
-
-                    _converse.connection.sendIQ(stanza, result => {
-                        const commands = sizzle('item[node^="http://jabber.org/protocol/admin"]', result);
-                        _converse.serviceAdminCommands = new _converse.ServiceAdminCommandCollection();
-                        commands.forEach(command => {
-                            const command_description = command.getAttribute('name');
-                            const command_node = command.getAttribute('node');
-                            const command_name = command_node.split('#').pop();
-
-                            _converse.serviceAdminCommands.add(new _converse.ServiceAdminCommandItem({
-                                command_node: command_node,
-                                description: command_description,
-                                command_name: command_name
-                            }));
-                        });
-                        this.renderControlboxElement();
+                        node: Strophe.NS.COMMANDS
                     });
+                    try {
+                        const result = await _converse.api.sendIQ(stanza);
+                        this.onCommandsList(result);
+                    } catch (e) {
+                        return log.error(e);
+                    }
                 }
+            },
+
+            onCommandsList (iq_result) {
+                const commands = sizzle('item[node^="http://jabber.org/protocol/admin"]', iq_result);
+                _converse.serviceAdminCommands = new _converse.ServiceAdminCommandCollection();
+                commands.forEach(command => {
+                    const command_description = command.getAttribute('name');
+                    const command_node = command.getAttribute('node');
+                    const command_name = command_node.split('#').pop();
+
+                    _converse.serviceAdminCommands.add(new _converse.ServiceAdminCommandItem({
+                        command_node: command_node,
+                        description: command_description,
+                        command_name: command_name
+                    }));
+                });
+                this.renderControlboxElement();
             },
 
             renderControlboxElement () {
