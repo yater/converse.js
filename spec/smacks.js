@@ -3,6 +3,7 @@
 } (this, function (jasmine, mock, test_utils) {
     "use strict";
     const $iq = converse.env.$iq;
+    const $msg = converse.env.$msg;
     const Strophe = converse.env.Strophe;
     const sizzle = converse.env.sizzle;
     const u = converse.env.utils;
@@ -176,6 +177,69 @@
 
             // Check that the roster gets fetched
             await test_utils.waitForRoster(_converse, 'current', 1);
+            done();
+        }));
+
+
+        it("will handle MUC messages sent during disconnection",
+            mock.initConverse(
+                ['chatBoxesInitialized'],
+                { 'auto_login': false,
+                  'enable_smacks': true,
+                  'show_controlbox_by_default': true,
+                  'blacklisted_plugins': 'converse-mam',
+                  'smacks_max_unacked_stanzas': 2
+                },
+                async function (done, _converse) {
+
+
+            const key = "converse-test-session/converse.session-romeo@montague.lit-converse.session-romeo@montague.lit";
+            sessionStorage.setItem(
+                key,
+                JSON.stringify({
+                    "id": "converse.session-romeo@montague.lit",
+                    "jid": "romeo@montague.lit/converse.js-100020907",
+                    "bare_jid": "romeo@montague.lit",
+                    "resource": "converse.js-100020907",
+                    "domain": "montague.lit",
+                    "active": false,
+                    "smacks_enabled": true,
+                    "num_stanzas_handled": 580,
+                    "num_stanzas_handled_by_server": 525,
+                    "num_stanzas_since_last_ack": 0,
+                    "unacked_stanzas": [],
+                    "smacks_stream_id": "some-long-sm-id",
+                    "push_enabled": ["romeo@montague.lit"],
+                    "carbons_enabled": true,
+                    "roster_cached": true
+                })
+            )
+            _converse.api.user.login('romeo@montague.lit', 'secret');
+            const sent_stanzas = _converse.connection.sent_stanzas;
+            const stanza = await u.waitUntil(() => sent_stanzas.filter(s => (s.tagName === 'resume')).pop());
+            expect(Strophe.serialize(stanza)).toEqual('<resume h="580" previd="some-long-sm-id" xmlns="urn:xmpp:sm:3"/>');
+
+            const result = u.toStanza(`<resumed xmlns="urn:xmpp:sm:3" h="another-sequence-number" previd="some-long-sm-id"/>`);
+            _converse.connection._dataRecv(test_utils.createRequest(result));
+            expect(_converse.session.get('smacks_enabled')).toBe(true);
+
+            const muc_jid = 'lounge@montague.lit/some1';
+            // A MUC message gets received
+            const msg = $msg({
+                    from: muc_jid,
+                    id: u.getUniqueId(),
+                    to: 'romeo@montague.lit',
+                    type: 'groupchat'
+                }).c('body').t('First message').tree();
+            _converse.connection._dataRecv(test_utils.createRequest(msg));
+            expect(_converse.session.get('smacks_received_stanzas').length).toBe(1);
+
+            await _converse.api.waitUntil('statusInitialized');
+
+            // Test now that when a MUC gets opened, it checks whether there
+            // are SMACKS messages waiting for it.
+            await test_utils.openAndEnterChatRoom(_converse, muc_jid, 'romeo');
+            await u.waitUntil(() => view.el.querySelectorAll('.chat-msg').length === 1);
             done();
         }));
     });

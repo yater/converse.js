@@ -78,7 +78,11 @@ converse.plugins.add('converse-smacks', {
             if (_converse.session.get('smacks_enabled')) {
                 if (u.isTagEqual(el, 'iq') || u.isTagEqual(el, 'presence') || u.isTagEqual(el, 'message'))  {
                     const h = _converse.session.get('num_stanzas_handled');
-                    _converse.session.save('num_stanzas_handled', h+1);
+                    const r = _converse.session.get('smacks_received_stanzas') || [];
+                    _converse.session.save({
+                        'smacks_received_stanzas': [...r, el],
+                        'num_stanzas_handled': h+1
+                    });
                 }
             }
             return true;
