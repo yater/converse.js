@@ -1027,6 +1027,18 @@ tab serves as a separate IM client.
 XEP-0280 requires server support, so make sure that message carbons are enabled
 on your server.
 
+message_history_size
+--------------------
+
+* Default: ``100``
+
+Determines how many mesages are shown in a chat's history. Set this to zero to
+disable any limit.
+
+Having too many messages in the DOM can cause performance issues such as sluggishness.
+We're working on adding virtualized lists to overcome this. In the meantime
+this setting is used to avoid too many messages in the DOM.
+
 
 message_limit
 -------------

@@ -18,8 +18,9 @@
 - #1839: Headline messages are shown in controlbox
 - Allow ignore bootstrap modules at build using environment variable: BOOTSTRAP_IGNORE_MODULES="Modal,Dropdown".
   example: export BOOTSTRAP_IGNORE_MODULES="Modal,Dropdown" && make dist
-- New config option [modtools_disable_query](https://conversejs.org/docs/html/configuration.html#modtools-disable-query)
+- New config option [message_history_size](https://conversejs.org/docs/html/configuration.html#message-history-size)
 - New config option [modtools_disable_assign](https://conversejs.org/docs/html/configuration.html#modtools-disable-assign)
+- New config option [modtools_disable_query](https://conversejs.org/docs/html/configuration.html#modtools-disable-query)
 
 ## 6.0.0 (2020-01-09)
 

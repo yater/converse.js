@@ -42,6 +42,7 @@ converse.plugins.add('converse-chat', {
         // Refer to docs/source/configuration.rst for explanations of these
         // configuration settings.
         _converse.api.settings.update({
+            'message_history_size': 0,
             'auto_join_private_chats': [],
             'clear_messages_on_reconnection': false,
             'filter_by_resource': false,
@@ -340,6 +341,16 @@ converse.plugins.add('converse-chat', {
                         _converse.api.send(this.createMessageStanza(message));
                     }
                 });
+                if (_converse.message_history_size) {
+                    this.listenTo(this.messages, 'add', message => {
+                        if (!u.isEmptyMessage(message) && this.messages.length > _converse.message_history_size) {
+                            const non_empty_messages = this.messages.filter(m => !u.isEmptyMessage(m));
+                            while (non_empty_messages.length > _converse.message_history_size) {
+                                non_empty_messages.shift().destroy();
+                            }
+                        }
+                    });
+                }
             },
 
             afterMessagesFetched () {

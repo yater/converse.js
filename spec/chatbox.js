@@ -406,6 +406,87 @@
                 done();
             }));
 
+            it("limits the amount of messages in the DOM based on the message_history_size config setting",
+                mock.initConverse(
+                    ['rosterGroupsFetched'], {'clear_messages_on_reconnection': true, 'message_history_size': 3},
+                    async function (done, _converse) {
+
+                await test_utils.waitForRoster(_converse, 'current');
+                const contact_jid = mock.cur_names[7].replace(/ /g,'.').toLowerCase() + '@montague.lit';
+                await u.waitUntil(() => _converse.rosterview.el.querySelectorAll('.roster-group').length);
+                await test_utils.openChatBoxFor(_converse, contact_jid);
+                const view = _converse.chatboxviews.get(contact_jid);
+
+                const promises = [];
+                for (let i=0; i<10; i++) {
+                    const msg = $msg({
+                        'from': contact_jid,
+                        'id': u.getUniqueId(),
+                        'to': _converse.bare_jid,
+                        'type': 'chat'
+                    }).c('body').t(`Message ${i}`).tree();
+                    promises.push(view.model.onMessage(msg));
+                }
+                await Promise.all(promises);
+                expect(view.model.messages.length).toBe(3);
+                expect(view.model.messages.at(0).get('message')).toBe('Message 7');
+                expect(view.model.messages.at(1).get('message')).toBe('Message 8');
+                expect(view.model.messages.at(2).get('message')).toBe('Message 9');
+                await u.waitUntil(() => view.el.querySelectorAll('.chat-msg__text').length === 3);
+
+                let msg = $msg({
+                    'from': contact_jid,
+                    'id': u.getUniqueId(),
+                    'to': 'romeo@montague.lit',
+                    'type': 'chat'
+                }).c('body').t(`Another message`).tree();
+                await view.model.onMessage(msg);
+                expect(view.model.messages.length).toBe(3);
+                expect(view.model.messages.at(0).get('message')).toBe('Message 8');
+                expect(view.model.messages.at(1).get('message')).toBe('Message 9');
+                expect(view.model.messages.at(2).get('message')).toBe('Another message');
+                await u.waitUntil(() => view.el.querySelectorAll('.chat-msg__text').length === 3);
+
+                await test_utils.sendMessage(view, 'hello world');
+                expect(view.model.messages.length).toBe(3);
+                expect(view.model.messages.at(0).get('message')).toBe('Message 9');
+                expect(view.model.messages.at(1).get('message')).toBe('Another message');
+                expect(view.model.messages.at(2).get('message')).toBe('hello world');
+                await u.waitUntil(() => view.el.querySelectorAll('.chat-msg__text').length === 3);
+
+                // chat-state messages don't trigger deletions
+                msg = $msg({
+                    'from': contact_jid,
+                    'id': u.getUniqueId(),
+                    'to': 'romeo@montague.lit',
+                    'type': 'chat'
+                }).c('body').c('composing', {'xmlns': Strophe.NS.CHATSTATES}).tree();
+
+                await view.model.onMessage(msg);
+                await u.waitUntil(() => view.el.querySelectorAll('.chat-state-notification').length);
+                expect(view.model.messages.length).toBe(4);
+                expect(view.model.messages.at(0).get('message')).toBe('Message 9');
+                expect(view.model.messages.at(1).get('message')).toBe('Another message');
+                expect(view.model.messages.at(2).get('message')).toBe('hello world');
+                expect(u.isOnlyChatStateNotification(view.model.messages.at(3))).toBe(true);
+                await u.waitUntil(() => view.el.querySelectorAll('.chat-msg__text').length === 3);
+
+                msg = $msg({
+                    'from': contact_jid,
+                    'id': u.getUniqueId(),
+                    'to': 'romeo@montague.lit',
+                    'type': 'chat'
+                }).c('body').t(`Yet another message`).tree();
+                await view.model.onMessage(msg);
+                expect(view.model.messages.length).toBe(4);
+                expect(view.model.messages.at(0).get('message')).toBe('Another message');
+                expect(view.model.messages.at(1).get('message')).toBe('hello world');
+                expect(u.isOnlyChatStateNotification(view.model.messages.at(2))).toBe(true);
+                expect(view.model.messages.at(3).get('message')).toBe('Yet another message');
+                await u.waitUntil(() => view.el.querySelectorAll('.chat-msg__text').length === 3);
+                done()
+            }));
+
             describe("A chat toolbar", function () {
 
                 it("can be found on each chat box",
