@@ -23,7 +23,7 @@ import tpl_chatroom_disconnect from "templates/chatroom_disconnect.html";
 import tpl_muc_config_form from "templates/muc_config_form.js";
 import tpl_chatroom_head from "templates/chatroom_head.js";
 import tpl_muc_invite_modal from "templates/muc_invite_modal.js";
-import tpl_chatroom_nickname_form from "templates/chatroom_nickname_form.html";
+import tpl_muc_nickname_form from "templates/muc_nickname_form.js";
 import tpl_muc_password_form from "templates/muc_password_form.js";
 import tpl_muc_sidebar from "templates/muc_sidebar.js";
 import tpl_info from "templates/info.html";
@@ -1688,11 +1688,12 @@ converse.plugins.add('converse-muc-views', {
                     __('Choose a nickname to enter') :
                     __('Please choose your nickname');
 
-                const html = tpl_chatroom_nickname_form(Object.assign({
+                const template = tpl_muc_nickname_form(Object.assign({
                     heading,
                     'label_nickname': __('Nickname'),
                     'label_join': __('Enter groupchat'),
                 }, this.model.toJSON()));
+                render(template, this.el.querySelector('.chatroom-form-container'));
 
                 if (_converse.muc_show_logs_before_join) {
                     const container = this.el.querySelector('.muc-bottom-panel');
