@@ -400,7 +400,7 @@ converse.plugins.add('converse-chat', {
                 const attrs = await this.getMessageAttributesFromStanza(stanza, original_stanza);
                 const message = this.getDuplicateMessage(attrs);
                 if (message) {
-                    this.updateMessage(message, original_stanza);
+                    await this.updateMessage(message, original_stanza);
                 } else if (
                     !this.handleReceipt (stanza, original_stanza, from_jid) &&
                     !this.handleChatMarker(stanza, from_jid)
@@ -410,7 +410,7 @@ converse.plugins.add('converse-chat', {
                     }
                     this.setEditable(attrs, attrs.time, stanza);
                     if (u.shouldCreateMessage(attrs)) {
-                        const msg = this.handleCorrection(attrs) || await this.createMessage(attrs);
+                        const msg = await this.handleCorrection(attrs) || await this.createMessage(attrs);
                         this.incrementUnreadMsgCounter(msg);
                     }
                 }
@@ -516,7 +516,7 @@ converse.plugins.add('converse-chat', {
                 // Overridden in converse-muc and converse-mam
                 const attrs = this.getUpdatedMessageAttributes(message, stanza);
                 if (attrs) {
-                    message.save(attrs);
+                    this.saveMessage(message, attrs);
                 }
             },
 
@@ -634,7 +634,7 @@ converse.plugins.add('converse-chat', {
                         await this.createMessage(attrs);
                         return true;
                     }
-                    message.save(pick(attrs, RETRACTION_ATTRIBUTES));
+                    await this.saveMessage(message, pick(attrs, RETRACTION_ATTRIBUTES));
                     return true;
                 } else {
                     // Check if we have dangling retraction
@@ -643,7 +643,7 @@ converse.plugins.add('converse-chat', {
                         const retraction_attrs = pick(message.attributes, RETRACTION_ATTRIBUTES);
                         const new_attrs = Object.assign({'dangling_retraction': false}, attrs, retraction_attrs);
                         delete new_attrs['id']; // Delete id, otherwise a new cache entry gets created
-                        message.save(new_attrs);
+                        await this.saveMessage(message, new_attrs);
                         return true;
                     }
                 }
@@ -662,7 +662,7 @@ converse.plugins.add('converse-chat', {
              * @returns { _converse.Message|undefined } Returns the corrected
              *  message or `undefined` if not applicable.
              */
-            handleCorrection (attrs) {
+            async handleCorrection (attrs) {
                 if (!attrs.replaced_id || !attrs.from) {
                     return;
                 }
@@ -674,13 +674,13 @@ converse.plugins.add('converse-chat', {
                 if ((attrs.time < message.get('time')) && message.get('edited')) {
                     // This is an older message which has been corrected afterwards
                     older_versions[attrs.time] = attrs['message'];
-                    message.save({'older_versions': older_versions});
+                    await this.saveMessage(message, {'older_versions': older_versions});
                 } else {
                     // This is a correction of an earlier message we already received
                     older_versions[message.get('time')] = message.get('message');
                     attrs = Object.assign(attrs, {'older_versions': older_versions});
                     delete attrs['id']; // Delete id, otherwise a new cache entry gets created
-                    message.save(attrs);
+                    await this.saveMessage(message, attrs);
                 }
                 return message;
             },
@@ -730,13 +730,14 @@ converse.plugins.add('converse-chat', {
 
             /**
              * Retract one of your messages in this chat
+             * @async
              * @private
              * @method _converse.ChatBoxView#retractOwnMessage
              * @param { _converse.Message } message - The message which we're retracting.
              */
             retractOwnMessage(message) {
                 this.sendRetractionMessage(message)
-                message.save({
+                return this.saveMessage(message, {
                     'retracted': (new Date()).toISOString(),
                     'retracted_id': message.get('origin_id'),
                     'is_ephemeral': true,
@@ -949,6 +950,10 @@ converse.plugins.add('converse-chat', {
                 return this.messages.create(attrs, Object.assign({'wait': true, 'promise':true}, options));
             },
 
+            saveMessage (message, attrs, options) {
+                return message.save(attrs, Object.assign({'wait': true, 'promise':true}, options));
+            },
+
             /**
              * Responsible for sending off a text message inside an ongoing chat conversation.
              * @method _converse.ChatBox#sendMessage
@@ -966,7 +971,7 @@ converse.plugins.add('converse-chat', {
                 if (message) {
                     const older_versions = message.get('older_versions') || {};
                     older_versions[message.get('time')] = message.get('message');
-                    message.save({
+                    await this.saveMessage(message, {
                         'correcting': false,
                         'edited': (new Date()).toISOString(),
                         'message': attrs.message,
