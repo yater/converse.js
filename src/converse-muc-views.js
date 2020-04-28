@@ -1242,7 +1242,7 @@ converse.plugins.add('converse-muc-views', {
             onConnectionStatusChanged () {
                 const conn_status = this.model.session.get('connection_status');
                 if (conn_status === converse.ROOMSTATUS.NICKNAME_REQUIRED) {
-                    this.showNicknameForm();
+                    this.renderNicknameForm();
                 } else if (conn_status === converse.ROOMSTATUS.PASSWORD_REQUIRED) {
                     this.renderPasswordForm();
                 } else if (conn_status === converse.ROOMSTATUS.CONNECTING) {
@@ -1679,14 +1679,6 @@ converse.plugins.add('converse-muc-views', {
                 return true;
             },
 
-            showNicknameForm () {
-                const nicknameForm = this.el.querySelector('.muc-nickname-form');
-                if (nicknameForm) {
-                    u.removeElement(nicknameForm);
-                }
-                this.renderNicknameForm();
-            },
-
             /**
              * Renders a form given an IQ stanza containing the current
              * groupchat configuration.
@@ -1717,6 +1709,8 @@ converse.plugins.add('converse-muc-views', {
              * @method _converse.ChatRoomView#renderNicknameForm
              */
             renderNicknameForm () {
+                u.removeElement(this.el.querySelector('.muc-nickname-form'));
+
                 const heading = _converse.muc_show_logs_before_join ?
                     __('Choose a nickname to enter') :
                     __('Please choose your nickname');
@@ -1780,12 +1774,6 @@ converse.plugins.add('converse-muc-views', {
                 if (container_el !== null) {
                     [].forEach.call(container_el.children, child => child.classList.add('hidden'));
                 }
-            },
-
-            showNicknameFormContents () {
-                const container_el = this.el.querySelector('.muc-nickname-form');
-                this.hideSpinner();
-                container_el.classList.remove('hidden')
             },
 
             renderPasswordForm () {
@@ -1943,7 +1931,7 @@ converse.plugins.add('converse-muc-views', {
             renderAfterTransition () {
                 const conn_status = this.model.session.get('connection_status')
                 if (conn_status == converse.ROOMSTATUS.NICKNAME_REQUIRED) {
-                    this.showNicknameForm();
+                    this.renderNicknameForm();
                 } else if (conn_status == converse.ROOMSTATUS.PASSWORD_REQUIRED) {
                     this.renderPasswordForm();
                 } else if (conn_status == converse.ROOMSTATUS.ENTERED) {
