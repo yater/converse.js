@@ -438,6 +438,8 @@ converse.plugins.add('converse-chat', {
                     if (u.shouldCreateMessage(attrs)) {
                         const msg = this.handleCorrection(attrs) || await this.createMessage(attrs);
                         this.notifications.set({'chat_state': null});
+                        // Note: the order here is important
+                        this.setFirstUnreadMessageFlag(msg);
                         this.incrementUnreadMsgCounter(msg);
                     }
                 }
@@ -1100,37 +1102,33 @@ converse.plugins.add('converse-chat', {
             /**
              * Given a newly received {@link _converse.Message} instance,
              * update the unread counter if necessary.
-             * @private
              * @param {_converse.Message} message
              */
             incrementUnreadMsgCounter (message) {
-                if (!message || !message.get('message')) {
-                    return;
-                }
                 if (utils.isNewMessage(message) && this.isHidden()) {
-                    this.setFirstUnreadMsgId(message);
                     this.save({'num_unread': this.get('num_unread') + 1});
                     _converse.incrementMsgCounter();
                 }
             },
 
             /**
-             * Sets the msgid of the first unread realtime message in a ChatBox.
-             * @param {_converse.Message} message
+             * Marks the first new message as unread. If no message is passed
+             * in, it simply  clears the flag on any other messages.
+             * @param {_converse.Message} message - The first unread message
              */
-            setFirstUnreadMsgId (message) {
-                if (this.get('num_unread') == 0) {
-                    const first_unread_id = this.get('first_unread_id');
-
-                    if (first_unread_id) {
-                      const msg = this.messages.get(first_unread_id);
-                      if (msg) msg.save("first_unread", false);
-                    }
-                    message.save("first_unread", true);
-                    this.save({'first_unread_id': message.get('id')});
+            setFirstUnreadMessageFlag (message) {
+                if (this.get('num_unread') === 0 &&
+                    (!message || utils.isNewMessage(message)) &&
+                    this.isHidden()
+                ) {
+                    this.messages.forEach(m => m.get('first_unread') && m.save('first_unread', false));
+                    message && message.save("first_unread", true);
                 }
             },
 
+            /**
+             * Clears the unread messages counter for this {@link _converse.ChatBox}
+             */
             clearUnreadMsgCounter () {
                 u.safeSave(this, {'num_unread': 0});
             },

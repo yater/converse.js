@@ -1153,6 +1153,51 @@ describe("Chatboxes", function () {
         }));
     });
 
+
+    describe("A unread flag", function () {
+
+        fit("is set and cleared on the first unread message",
+            mock.initConverse(
+                ['rosterGroupsFetched'], {},
+                async function (done, _converse) {
+
+            await mock.waitForRoster(_converse, 'current');
+            await mock.openControlBox(_converse);
+
+            expect(document.title).toBe('Converse Tests');
+
+            const sender_jid = mock.cur_names[0].replace(/ /g,'.').toLowerCase() + '@montague.lit';
+            const view = await mock.openChatBoxFor(_converse, sender_jid)
+            const message = 'This message will increment the message counter';
+            const msg = $msg({
+                    from: sender_jid,
+                    to: _converse.connection.jid,
+                    type: 'chat',
+                    id: u.getUniqueId()
+                }).c('body').t(message).up()
+                  .c('active', {'xmlns': Strophe.NS.CHATSTATES}).tree();
+            _converse.windowState = 'hidden';
+
+            spyOn(_converse, 'clearMsgCounter').and.callThrough();
+            spyOn(_converse, 'incrementMsgCounter').and.callThrough();
+            spyOn(view.model, 'setFirstUnreadMessageFlag').and.callThrough();
+
+            await _converse.handleMessageStanza(msg);
+            await new Promise(resolve => view.once('messageInserted', resolve));
+            expect(_converse.incrementMsgCounter).toHaveBeenCalled();
+            expect(_converse.clearMsgCounter).not.toHaveBeenCalled();
+            expect(document.title).toBe('Messages (1) Converse Tests');
+
+            _converse.saveWindowState(null, 'focus');
+            _converse.saveWindowState(null, 'blur');
+            expect(_converse.clearMsgCounter).toHaveBeenCalled();
+            expect(view.model.setFirstUnreadMessageFlag).toHaveBeenCalled();
+            expect(document.title).toBe('Converse Tests');
+            done();
+        }));
+    });
+
+
     describe("A Message Counter", function () {
 
         it("is incremented when the message is received and the window is not focused",
@@ -1162,13 +1207,10 @@ describe("Chatboxes", function () {
 
             await mock.waitForRoster(_converse, 'current');
             await mock.openControlBox(_converse);
-
             expect(document.title).toBe('Converse Tests');
 
             const sender_jid = mock.cur_names[0].replace(/ /g,'.').toLowerCase() + '@montague.lit';
             const view = await mock.openChatBoxFor(_converse, sender_jid)
-
-            const previous_state = _converse.windowState;
             const message = 'This message will increment the message counter';
             const msg = $msg({
                     from: sender_jid,
@@ -1189,7 +1231,6 @@ describe("Chatboxes", function () {
             expect(_converse.clearMsgCounter).not.toHaveBeenCalled();
             expect(document.title).toBe('Messages (1) Converse Tests');
             expect(_converse.api.trigger).toHaveBeenCalledWith('message', jasmine.any(Object));
-            _converse.windowSate = previous_state;
             done();
         }));
 
@@ -1200,11 +1241,36 @@ describe("Chatboxes", function () {
 
             await mock.waitForRoster(_converse, 'current');
             await mock.openControlBox(_converse);
+
+            expect(document.title).toBe('Converse Tests');
+
+            const sender_jid = mock.cur_names[0].replace(/ /g,'.').toLowerCase() + '@montague.lit';
+            const view = await mock.openChatBoxFor(_converse, sender_jid)
+            const message = 'This message will increment the message counter';
+            const msg = $msg({
+                    from: sender_jid,
+                    to: _converse.connection.jid,
+                    type: 'chat',
+                    id: u.getUniqueId()
+                }).c('body').t(message).up()
+                  .c('active', {'xmlns': Strophe.NS.CHATSTATES}).tree();
             _converse.windowState = 'hidden';
+
             spyOn(_converse, 'clearMsgCounter').and.callThrough();
+            spyOn(_converse, 'incrementMsgCounter').and.callThrough();
+            spyOn(view.model, 'setFirstUnreadMessageFlag').and.callThrough();
+
+            await _converse.handleMessageStanza(msg);
+            await new Promise(resolve => view.once('messageInserted', resolve));
+            expect(_converse.incrementMsgCounter).toHaveBeenCalled();
+            expect(_converse.clearMsgCounter).not.toHaveBeenCalled();
+            expect(document.title).toBe('Messages (1) Converse Tests');
+
             _converse.saveWindowState(null, 'focus');
             _converse.saveWindowState(null, 'blur');
             expect(_converse.clearMsgCounter).toHaveBeenCalled();
+            expect(view.model.setFirstUnreadMessageFlag).toHaveBeenCalled();
+            expect(document.title).toBe('Converse Tests');
             done();
         }));
 

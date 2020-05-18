@@ -1350,9 +1350,7 @@ converse.plugins.add('converse-chatview', {
 
             onScrolledDown () {
                 this.hideNewMessagesIndicator();
-                if (_converse.windowState !== 'hidden') {
-                    this.model.clearUnreadMsgCounter();
-                }
+                !this.model.isHidden() && this.model.clearUnreadMsgCounter();
                 /**
                  * Triggered once the chat's message area has been scrolled down to the bottom.
                  * @event _converse#chatBoxScrolledDown
@@ -1363,17 +1361,13 @@ converse.plugins.add('converse-chatview', {
                 api.trigger('chatBoxScrolledDown', {'chatbox': this.model}); // TODO: clean up
             },
 
-            onWindowStateChanged (state) {
-                if (state === 'visible') {
-                    if (!this.model.isHidden()) {
-                        // this.model.setChatState(_converse.ACTIVE);
-                        if (this.model.get('num_unread', 0)) {
-                            this.model.clearUnreadMsgCounter();
-                        }
-                    }
-                } else if (state === 'hidden') {
+            onWindowStateChanged () {
+                if (this.model.isHidden()) {
                     this.model.setChatState(_converse.INACTIVE, {'silent': true});
                     this.model.sendChatState();
+                    this.model.setFirstUnreadMessageFlag();
+                } else {
+                    this.model.clearUnreadMsgCounter();
                 }
             }
         });
@@ -1391,13 +1385,9 @@ converse.plugins.add('converse-chatview', {
 
         /************************ BEGIN Event Handlers ************************/
         function onWindowStateChanged (data) {
-            if (_converse.chatboxviews) {
-                _converse.chatboxviews.forEach(view => {
-                    if (view.model.get('id') !== 'controlbox') {
-                        view.onWindowStateChanged(data.state);
-                    }
-                });
-            }
+            _converse.chatboxviews?.forEach(
+                view => (view.model.get('id') !== 'controlbox') && view.onWindowStateChanged(data.state)
+            );
         }
         api.listen.on('windowStateChanged', onWindowStateChanged);
         api.listen.on('connected', () => api.disco.own.features.add(Strophe.NS.SPOILER));

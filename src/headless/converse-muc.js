@@ -2006,6 +2006,8 @@ converse.plugins.add('converse-muc', {
                 if (u.shouldCreateGroupchatMessage(attrs)) {
                     const msg = this.handleCorrection(attrs) || await this.createMessage(attrs);
                     this.removeNotification(attrs.nick, ['composing', 'paused']);
+                    // Note: the order here is important
+                    this.setFirstUnreadMessageFlag(msg);
                     this.incrementUnreadMsgCounter(msg);
                 }
             },
@@ -2388,7 +2390,6 @@ converse.plugins.add('converse-muc', {
                 const body = message.get('message');
                 if (!body) { return; }
                 if (u.isNewMessage(message) && this.isHidden()) {
-                    this.setFirstUnreadMsgId(message);
                     const settings = {'num_unread_general': this.get('num_unread_general') + 1};
                     if (this.isUserMentioned(message)) {
                         settings.num_unread = this.get('num_unread') + 1;
