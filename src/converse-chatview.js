@@ -171,8 +171,6 @@ converse.plugins.add('converse-chatview', {
 
             events: {
                 'change input.fileupload': 'onFileSelection',
-                'click .chat-msg__action-edit': 'onMessageEditButtonClicked',
-                'click .chat-msg__action-retract': 'onMessageRetractButtonClicked',
                 'click .chatbox-navback': 'showControlBox',
                 'click .new-msgs-indicator': 'viewUnreadMessages',
                 'click .send-button': 'onFormSubmitted',
@@ -269,7 +267,7 @@ converse.plugins.add('converse-chatview', {
 
             async renderChatContent () {
                 await api.waitUntil('emojisInitialized');
-                const tpl = (o) => html`<converse-chat-content .messages=${o.messages}></converse-chat-content>`;
+                const tpl = (o) => html`<converse-chat-content .chatview=${this} .messages=${o.messages}></converse-chat-content>`;
                 render(tpl({'messages': Array.from(this.model.messages)}), this.msgs_container);
             },
 
@@ -907,14 +905,9 @@ converse.plugins.add('converse-chatview', {
                 this.insertIntoTextArea('', true, false);
             },
 
-            async onMessageRetractButtonClicked (ev) {
-                ev.preventDefault();
-                const msg_el = u.ancestor(ev.target, '.message');
-                const msgid = msg_el.getAttribute('data-msgid');
-                const time = msg_el.getAttribute('data-isodate');
-                const message = this.model.messages.findWhere({msgid, time});
+            async onMessageRetractButtonClicked (message) {
                 if (message.get('sender') !== 'me') {
-                    return log.error("onMessageEditButtonClicked called for someone else's message!");
+                    return log.error("onMessageRetractButtonClicked called for someone else's message!");
                 }
                 const retraction_warning =
                     __("Be aware that other XMPP/Jabber clients (and servers) may "+
@@ -931,26 +924,17 @@ converse.plugins.add('converse-chatview', {
                 }
             },
 
-            onMessageEditButtonClicked (ev) {
-                ev.preventDefault();
-
-                const idx = this.model.messages.findLastIndex('correcting'),
-                      currently_correcting = idx >=0 ? this.model.messages.at(idx) : null,
-                      message_el = u.ancestor(ev.target, '.chat-msg'),
-                      message = this.model.messages.findWhere({'msgid': message_el.getAttribute('data-msgid')});
-
-                const textarea = this.el.querySelector('.chat-textarea');
-                if (textarea.value &&
-                        ((currently_correcting === null) || currently_correcting.get('message') !== textarea.value)) {
+            onMessageEditButtonClicked (message) {
+                const currently_correcting = this.model.messages.findWhere('correcting');
+                const unsent_text = this.el.querySelector('.chat-textarea')?.value;
+                if (unsent_text && (!currently_correcting || currently_correcting.get('message') !== unsent_text)) {
                     if (! confirm(__("You have an unsent message which will be lost if you continue. Are you sure?"))) {
                         return;
                     }
                 }
 
                 if (currently_correcting !== message) {
-                    if (currently_correcting !== null) {
-                        currently_correcting.save('correcting', false);
-                    }
+                    currently_correcting?.save('correcting', false);
                     message.save('correcting', true);
                     this.insertIntoTextArea(u.prefixMentions(message), true, true);
                 } else {

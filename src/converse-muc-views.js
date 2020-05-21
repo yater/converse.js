@@ -437,8 +437,6 @@ converse.plugins.add('converse-muc-views', {
             is_chatroom: true,
             events: {
                 'change input.fileupload': 'onFileSelection',
-                'click .chat-msg__action-edit': 'onMessageEditButtonClicked',
-                'click .chat-msg__action-retract': 'onMessageRetractButtonClicked',
                 'click .chatbox-navback': 'showControlBox',
                 'click .hide-occupants': 'hideOccupants',
                 'click .new-msgs-indicator': 'viewUnreadMessages',
@@ -784,12 +782,7 @@ converse.plugins.add('converse-muc-views', {
                 return _converse.ChatBoxView.prototype.onKeyUp.call(this, ev);
             },
 
-            async onMessageRetractButtonClicked (ev) {
-                ev.preventDefault();
-                const msg_el = u.ancestor(ev.target, '.message');
-                const msgid = msg_el.getAttribute('data-msgid');
-                const time = msg_el.getAttribute('data-isodate');
-                const message = this.model.messages.findWhere({msgid, time});
+            async onMessageRetractButtonClicked (message) {
                 const retraction_warning =
                     __("Be aware that other XMPP/Jabber clients (and servers) may "+
                         "not yet support retractions and that this message may not "+

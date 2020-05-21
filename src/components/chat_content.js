@@ -29,50 +29,11 @@ function getDayIndicator (model) {
 }
 
 
-function renderMessage (model) {
-    // XXX: leaky abstraction "is_only_key" from converse-omemo
-    if (model.get('dangling_retraction') || model.get('is_only_key')) {
-        return '';
-    }
-    const day = getDayIndicator(model);
-    const templates = day ? [day] : [];
-    const is_retracted = model.get('retracted') || model.get('moderated') === 'retracted';
-    const is_groupchat_message = model.get('type') === 'groupchat';
-
-    let hats = [];
-    if (is_groupchat_message) {
-        if (api.settings.get('muc_hats_from_vcard')) {
-            const role = model.vcard ? model.vcard.get('role') : null;
-            hats = role ? role.split(',') : [];
-        } else {
-            hats = model.occupant?.get('hats') || [];
-        }
-    }
-
-    const message = tpl_message(
-        Object.assign(model.toJSON(), {
-            'is_me_message': model.isMeCommand(),
-            'occupant': model.occupant,
-            'username': model.getDisplayName(),
-            hats,
-            is_groupchat_message,
-            is_retracted,
-            model
-        }));
-
-    if (model.collection) {
-        // If the model gets destroyed in the meantime, it no
-        // longer has a collection.
-        model.collection.trigger('rendered', this);
-    }
-    return [...templates, message];
-}
-
-
 class ChatContent extends CustomElement {
 
     static get properties () {
         return {
+            chatview: { type: Object},
             messages: { type: Array},
         }
     }
@@ -80,9 +41,51 @@ class ChatContent extends CustomElement {
     render () {
         const msgs = this.messages;
         return msgs.length ?
-            html`${repeat(msgs, m => m.get('id'), m => renderMessage(m)) }` :
+            html`${repeat(msgs, m => m.get('id'), m => this.renderMessage(m)) }` :
             html`<div class="empty-history-feedback form-help"><span>${i18n_no_history}</span></div>`;
     }
+
+    renderMessage (model) {
+        // XXX: leaky abstraction "is_only_key" from converse-omemo
+        if (model.get('dangling_retraction') || model.get('is_only_key')) {
+            return '';
+        }
+        const day = getDayIndicator(model);
+        const templates = day ? [day] : [];
+        const is_retracted = model.get('retracted') || model.get('moderated') === 'retracted';
+        const is_groupchat_message = model.get('type') === 'groupchat';
+
+        let hats = [];
+        if (is_groupchat_message) {
+            if (api.settings.get('muc_hats_from_vcard')) {
+                const role = model.vcard ? model.vcard.get('role') : null;
+                hats = role ? role.split(',') : [];
+            } else {
+                hats = model.occupant?.get('hats') || [];
+            }
+        }
+
+        const message = tpl_message(
+            Object.assign(model.toJSON(), {
+                'chatview': this.chatview,
+                'is_me_message': model.isMeCommand(),
+                'occupant': model.occupant,
+                'username': model.getDisplayName(),
+                hats,
+                is_groupchat_message,
+                is_retracted,
+                model,
+            }));
+
+        if (model.collection) {
+            // If the model gets destroyed in the meantime, it no
+            // longer has a collection.
+            model.collection.trigger('rendered', this);
+        }
+        return [...templates, message];
+    }
+
+
 }
 
 customElements.define('converse-chat-content', ChatContent);

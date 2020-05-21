@@ -1,14 +1,13 @@
 import "./message-body.js";
+import MessageVersionsModal from '../modals/message-versions.js';
 import dayjs from 'dayjs';
-import tpl_info from "../templates/info.js";
-import tpl_message_versions_modal from "../templates/message_versions_modal.js";
-import { BootstrapModal } from "../converse-modal.js";
 import { CustomElement } from './element.js';
 import { __ } from '@converse/headless/i18n';
 import { _converse, api, converse } from  "@converse/headless/converse-core";
 import { html } from 'lit-element';
 import { renderAvatar } from './../templates/directives/avatar';
 import { renderRetractionLink } from './../templates/directives/retraction';
+import { unsafeHTML } from 'lit-html/directives/unsafe-html.js';
 
 const { Strophe } = converse.env;
 const u = converse.env.utils;
@@ -20,69 +19,11 @@ const i18n_show_less = __('Show less');
 const i18n_uploading = __('Uploading file:')
 
 
-const MessageVersionsModal = BootstrapModal.extend({
-    // FIXME: this isn't globally unique
-    id: "message-versions-modal",
-    toHTML () {
-        return tpl_message_versions_modal(this.model.toJSON());
-    }
-});
-
-
-const tpl_file_progress = (o) => html`
-    <div class="message chat-msg">
-        ${ renderAvatar(this) }
-        <div class="chat-msg__content">
-            <span class="chat-msg__text">${i18n_uploading} <strong>${o.filename}</strong>, ${o.filesize}</span>
-            <progress value="${o.progress}"/>
-        </div>
-    </div>
-`;
-
-
-const tpl_chat_message = (o) =>  {
-    const is_groupchat_message = (o.message_type === 'groupchat');
-    return html`
-    <div class="message chat-msg ${o.message_type} ${o.getExtraMessageClasses()}
-            ${ o.is_me_message ? 'chat-msg--action' : '' }
-            ${o.isFollowup() ? 'chat-msg--followup' : ''}"
-            data-from="${o.from}" data-encrypted="${o.is_encrypted}">
-
-        ${ renderAvatar(o) }
-        <div class="chat-msg__content chat-msg__content--${o.sender} ${o.is_me_message ? 'chat-msg__content--action' : ''}">
-            ${o.first_unread ? html`<div class="message date-separator"><hr class="separator"><span class="separator-text">{{{o.__('unread messages')}}}</span></div>` : '' }
-            <span class="chat-msg__heading">
-                ${ (o.is_me_message) ? html`
-                    <time timestamp="${o.time}" class="chat-msg__time">${o.pretty_time}</time>
-                    ${o.hats.map(hat => html`<span class="badge badge-secondary">${hat}</span>`)}
-                ` : '' }
-                <span class="chat-msg__author">${ o.is_me_message ? '**' : ''}${o.username}</span>
-                ${ !o.is_me_message ? o.renderAvatarByline() : '' }
-                ${ o.is_encrypted ? html`<span class="fa fa-lock"></span>` : '' }
-            </span>
-            <div class="chat-msg__body chat-msg__body--${o.message_type} ${o.received ? 'chat-msg__body--received' : '' } ${o.is_delayed ? 'chat-msg__body--delayed' : '' }">
-                <div class="chat-msg__message">
-                    ${ o.is_retracted ? o.renderRetraction() : o.renderMessageText() }
-                </div>
-                ${ (o.received && !o.is_me_message && !is_groupchat_message) ? html`<span class="fa fa-check chat-msg__receipt"></span>` : '' }
-                ${ (o.edited) ? html`<i title="${ i18n_edited }" class="fa fa-edit chat-msg__edit-modal" @click=${o.showMessageVersionsModal}></i>` : '' }
-                <div class="chat-msg__actions">
-                    ${ o.editable ?
-                        html`<button class="chat-msg__action chat-msg__action-edit" title="${i18n_edit_message}">
-                            <fa-icon class="fas fa-pencil-alt" path-prefix="/node_modules" color="var(--text-color-lighten-15-percent)" size="1em"></fa-icon>
-                        </button>` : '' }
-                    ${ renderRetractionLink(o) }
-                </div>
-            </div>
-        </div>
-    </div>
-`};
-
-
 class Message extends CustomElement {
 
     static get properties () {
         return {
+            chatview: { type: Object},
             correcting: { type: Boolean },
             editable: { type: Boolean },
             first_unread: { type: Boolean },
@@ -119,18 +60,81 @@ class Message extends CustomElement {
         const format = api.settings.get('time_format');
         this.pretty_time = dayjs(this.time).format(format);
         if (this.model.get('file') && !this.model.get('oob_url')) {
-            return tpl_file_progress(this);
+            return this.renderFileProgress();
         } else if (['error', 'info'].includes(this.message_type)) {
-            return tpl_info(
-                Object.assign(this.model.toJSON(), {
-                    'onRetryClicked': ev => this.onRetryClicked(ev),
-                    'extra_classes': this.message_type,
-                    'isodate': dayjs(this.model.get('time')).toISOString()
-                })
-            );
+            return this.renderInfoMessage();
         } else {
-            return tpl_chat_message(this);
+            return this.renderChatMessage();
         }
+    }
+
+    renderInfoMessage () {
+        const isodate = dayjs(this.model.get('time')).toISOString();
+        const i18n_retry = __('Retry');
+        return html`
+            <div class="message chat-info ${this.message_type}"
+                data-isodate="${isodate}"
+                data-type="${this.data_name}"
+                data-value="${this.data_value}">
+
+                ${ this.render_message ? unsafeHTML(this.message) : this.message }
+                ${ this.retry ? html`<a class="retry" @click=${this.onRetryClicked}>${i18n_retry}</a>` : '' }
+            </div>
+        `;
+    }
+
+
+    renderFileProgress () {
+        return html`
+            <div class="message chat-msg">
+                ${ renderAvatar(this) }
+                <div class="chat-msg__content">
+                    <span class="chat-msg__text">${i18n_uploading} <strong>${this.filename}</strong>, ${this.filesize}</span>
+                    <progress value="${this.progress}"/>
+                </div>
+            </div>`;
+    }
+
+    renderChatMessage () {
+        const is_groupchat_message = (this.message_type === 'groupchat');
+        return html`
+            <div class="message chat-msg ${this.message_type} ${this.getExtraMessageClasses()}
+                    ${ this.is_me_message ? 'chat-msg--action' : '' }
+                    ${this.isFollowup() ? 'chat-msg--followup' : ''}"
+                    data-isodate="${this.time}" data-msgid="${this.msgid}" data-from="${this.from}" data-encrypted="${this.is_encrypted}">
+
+                ${ renderAvatar(this) }
+                <div class="chat-msg__content chat-msg__content--${this.sender} ${this.is_me_message ? 'chat-msg__content--action' : ''}">
+                    ${this.first_unread ? html`<div class="message date-separator"><hr class="separator"><span class="separator-text">{{{this.__('unread messages')}}}</span></div>` : '' }
+                    <span class="chat-msg__heading">
+                        ${ (this.is_me_message) ? html`
+                            <time timestamp="${this.time}" class="chat-msg__time">${this.pretty_time}</time>
+                            ${this.hats.map(hat => html`<span class="badge badge-secondary">${hat}</span>`)}
+                        ` : '' }
+                        <span class="chat-msg__author">${ this.is_me_message ? '**' : ''}${this.username}</span>
+                        ${ !this.is_me_message ? this.renderAvatarByline() : '' }
+                        ${ this.is_encrypted ? html`<span class="fa fa-lock"></span>` : '' }
+                    </span>
+                    <div class="chat-msg__body chat-msg__body--${this.message_type} ${this.received ? 'chat-msg__body--received' : '' } ${this.is_delayed ? 'chat-msg__body--delayed' : '' }">
+                        <div class="chat-msg__message">
+                            ${ this.is_retracted ? this.renderRetraction() : this.renderMessageText() }
+                        </div>
+                        ${ (this.received && !this.is_me_message && !is_groupchat_message) ? html`<span class="fa fa-check chat-msg__receipt"></span>` : '' }
+                        ${ (this.edited) ? html`<i title="${ i18n_edited }" class="fa fa-edit chat-msg__edit-modal" @click=${this.showMessageVersionsModal}></i>` : '' }
+                        <div class="chat-msg__actions">
+                            ${ this.editable ?
+                                    html`<button
+                                        class="chat-msg__action chat-msg__action-edit"
+                                        title="${i18n_edit_message}"
+                                        @click=${this.onMessageEditButtonClicked}
+                                    >
+                                    <fa-icon class="fas fa-pencil-alt" path-prefix="/node_modules" color="var(--text-color-lighten-15-percent)" size="1em"></fa-icon>
+                                </button>` : '' }
+                            ${ renderRetractionLink(this) }
+                        </div>
+                    </div>
+                </div>
+            </div>`;
     }
 
     async onRetryClicked () {
@@ -139,6 +143,16 @@ class Message extends CustomElement {
         await this.model.error.retry();
         this.model.destroy();
         this.parentElement.removeChild(this);
+    }
+
+    onMessageRetractButtonClicked (ev) {
+        ev.preventDefault();
+        this.chatview.onMessageRetractButtonClicked(this.model);
+    }
+
+    onMessageEditButtonClicked (ev) {
+        ev.preventDefault();
+        this.chatview.onMessageEditButtonClicked(this.model);
     }
 
     isFollowup () {

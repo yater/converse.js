@@ -3,11 +3,12 @@ import { html } from 'lit-element';
 
 export default (o) => html`
     <converse-chat-message
-        .model=${o.model}
+        .chatview=${o.chatview}
         .hats=${o.hats}
-        ?retractable=${o.retractable}
+        .model=${o.model}
         ?correcting=${o.model.get('correcting')}
         ?editable=${o.model.get('editable')}
+        ?retractable=${o.retractable}
         ?has_mentions=${o.has_mentions}
         ?is_delayed=${o.model.get('is_delayed')}
         ?is_encrypted=${o.model.get('is_encrypted')}
