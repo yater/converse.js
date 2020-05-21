@@ -76,12 +76,6 @@ class ChatContent extends CustomElement {
                 is_retracted,
                 model,
             }));
-
-        if (model.collection) {
-            // If the model gets destroyed in the meantime, it no
-            // longer has a collection.
-            model.collection.trigger('rendered', this);
-        }
         return [...templates, message];
     }
 

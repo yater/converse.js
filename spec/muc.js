@@ -527,7 +527,7 @@ describe("Groupchats", function () {
                         <body>This is a message</body>
                     </message>`);
                 _converse.connection._dataRecv(mock.createRequest(stanza));
-                await new Promise(resolve => view.once('messageInserted', resolve));
+                await new Promise(resolve => view.model.messages.once('rendered', resolve));
                 expect(sizzle('.chat-msg__subject', view.el).length).toBe(1);
                 expect(sizzle('.chat-msg__subject', view.el).pop().textContent.trim()).toBe('This is a message subject');
                 expect(sizzle('.chat-msg__text').length).toBe(1);
@@ -562,7 +562,7 @@ describe("Groupchats", function () {
                         <body>This is a message</body>
                     </message>`);
                 _converse.connection._dataRecv(mock.createRequest(stanza));
-                await new Promise(resolve => view.once('messageInserted', resolve));
+                await new Promise(resolve => view.model.messages.once('rendered', resolve));
                 expect(sizzle('.chat-msg__subject', view.el).length).toBe(1);
                 expect(sizzle('.chat-msg__subject', view.el).pop().textContent.trim()).toBe('This is a message subject');
                 expect(sizzle('.chat-msg__text').length).toBe(1);
@@ -861,7 +861,7 @@ describe("Groupchats", function () {
                 'type': 'groupchat'
             }).c('body').t('hello world').tree();
             _converse.connection._dataRecv(mock.createRequest(msg));
-            await new Promise(resolve => view.once('messageInserted', resolve));
+            await new Promise(resolve => view.model.messages.once('rendered', resolve));
 
             // Add another entrant, otherwise the above message will be
             // collapsed if "newguy" leaves immediately again
@@ -2042,7 +2042,7 @@ describe("Groupchats", function () {
                 preventDefault: function preventDefault () {},
                 keyCode: 13
             });
-            await new Promise(resolve => view.once('messageInserted', resolve));
+            await new Promise(resolve => view.model.messages.once('rendered', resolve));
 
             expect(_converse.api.trigger).toHaveBeenCalledWith('messageSend', jasmine.any(_converse.Message));
             expect(view.content.querySelectorAll('.chat-msg').length).toBe(1);
@@ -2102,7 +2102,7 @@ describe("Groupchats", function () {
                         type: 'groupchat',
                         id: u.getUniqueId(),
                     }).c('body').t(message).tree());
-                await new Promise(resolve => view.once('messageInserted', resolve));
+                await new Promise(resolve => view.model.messages.once('rendered', resolve));
                 // Now check that the message appears inside the chatbox in the DOM
                 const msg_txt = sizzle('.chat-msg:last .chat-msg__text', view.content).pop().textContent;
                 expect(msg_txt).toEqual(message);
@@ -5056,7 +5056,7 @@ describe("Groupchats", function () {
                     type: 'groupchat'
                 }).c('body').t('hello world').tree();
                 await view.model.handleMessageStanza(msg);
-                await new Promise(resolve => view.once('messageInserted', resolve));
+                await new Promise(resolve => view.model.messages.once('rendered', resolve));
 
                 const messages = view.el.querySelectorAll('.message');
                 expect(messages.length).toBe(2);
@@ -5186,20 +5186,20 @@ describe("Groupchats", function () {
             const textarea = view.el.querySelector('.chat-textarea');
             textarea.value = 'Hello world';
             view.onFormSubmitted(new Event('submit'));
-            await new Promise(resolve => view.once('messageInserted', resolve));
+            await new Promise(resolve => view.model.messages.once('rendered', resolve));
 
             let stanza = u.toStanza(`
                 <message xmlns="jabber:client" type="error" to="troll@montague.lit/resource" from="trollbox@montague.lit">
                     <error type="auth"><forbidden xmlns="urn:ietf:params:xml:ns:xmpp-stanzas"/></error>
                 </message>`);
             _converse.connection._dataRecv(mock.createRequest(stanza));
-            await new Promise(resolve => view.once('messageInserted', resolve));
+            await new Promise(resolve => view.model.messages.once('rendered', resolve));
             expect(view.el.querySelector('.chat-error').textContent.trim()).toBe(
                 "Your message was not delivered because you weren't allowed to send it.");
 
             textarea.value = 'Hello again';
             view.onFormSubmitted(new Event('submit'));
-            await new Promise(resolve => view.once('messageInserted', resolve));
+            await new Promise(resolve => view.model.messages.once('rendered', resolve));
 
             stanza = u.toStanza(`
                 <message xmlns="jabber:client" type="error" to="troll@montague.lit/resource" from="trollbox@montague.lit">
@@ -5209,7 +5209,7 @@ describe("Groupchats", function () {
                     </error>
                 </message>`);
             _converse.connection._dataRecv(mock.createRequest(stanza));
-            await new Promise(resolve => view.once('messageInserted', resolve));
+            await new Promise(resolve => view.model.messages.once('rendered', resolve));
 
             expect(view.el.querySelector('.message:last-child').textContent.trim()).toBe(
                 'Your message was not delivered because you weren\'t allowed to send it. '+

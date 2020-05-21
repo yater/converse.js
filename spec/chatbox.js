@@ -35,12 +35,13 @@ fdescribe("Chatboxes", function () {
                 }).c('body').t('hello world').tree();
             await _converse.handleMessageStanza(msg);
             await u.waitUntil(() => view.content.querySelectorAll('.chat-msg').length);
-            expect(view.msgs_container.lastElementChild.textContent.trim().indexOf('hello world')).not.toBe(-1);
+            const msg_txt_sel = 'converse-chat-message:last-child .chat-msg__body';
+            await u.waitUntil(() => view.el.querySelector(msg_txt_sel).textContent.trim() === 'hello world');
             done();
         }));
 
 
-        fit("supports the /me command", mock.initConverse(['rosterGroupsFetched'], {}, async function (done, _converse) {
+        it("supports the /me command", mock.initConverse(['rosterGroupsFetched'], {}, async function (done, _converse) {
             await mock.waitForRoster(_converse, 'current');
             await mock.waitUntilDiscoConfirmed(_converse, 'montague.lit', [], ['vcard-temp']);
             await u.waitUntil(() => _converse.xmppstatus.vcard.get('fullname'));
@@ -75,12 +76,15 @@ fdescribe("Chatboxes", function () {
             // get the 'chat-msg--followup' class.
             message = 'This a normal message';
             await mock.sendMessage(view, message);
-            await u.waitUntil(() => view.el.querySelector('.message:last-child').textContent === message);
-            expect(u.hasClass('chat-msg--followup', view.el.querySelector('.message:last-child'))).toBeFalsy();
+            const msg_txt_sel = 'converse-chat-message:last-child .chat-msg__body';
+            await u.waitUntil(() => view.el.querySelector(msg_txt_sel).textContent.trim() === message);
+            let el = view.el.querySelector('converse-chat-message:last-child .chat-msg__body');
+            expect(u.hasClass('chat-msg--followup', el)).toBeFalsy();
 
             message = '/me wrote a 3rd person message';
             await mock.sendMessage(view, message);
-            await u.waitUntil(() => view.el.querySelector('.message:last-child').textContent === message);
+            await u.waitUntil(() => view.el.querySelector(msg_txt_sel).textContent.trim() === message.replace('/me ', ''));
+            el = view.el.querySelector('converse-chat-message:last-child .chat-msg__body');
             expect(view.el.querySelectorAll('.chat-msg--action').length).toBe(3);
 
             expect(sizzle('.chat-msg__text:last', view.el).pop().textContent).toBe('wrote a 3rd person message');
@@ -454,7 +458,7 @@ fdescribe("Chatboxes", function () {
                     keyCode: 13 // Enter
                 };
                 view.onKeyDown(ev);
-                await new Promise(resolve => view.once('messageInserted', resolve));
+                await new Promise(resolve => view.model.messages.once('rendered', resolve));
                 view.onKeyUp(ev);
                 expect(counter.textContent).toBe('200');
 
@@ -1158,7 +1162,7 @@ fdescribe("Chatboxes", function () {
 
     describe("A Message Counter", function () {
 
-        fit("is incremented when the message is received and the window is not focused",
+        it("is incremented when the message is received and the window is not focused",
                 mock.initConverse(
                     ['rosterGroupsFetched'], {},
                     async function (done, _converse) {
@@ -1169,8 +1173,6 @@ fdescribe("Chatboxes", function () {
             expect(document.title).toBe('Converse Tests');
 
             const sender_jid = mock.cur_names[0].replace(/ /g,'.').toLowerCase() + '@montague.lit';
-            const view = await mock.openChatBoxFor(_converse, sender_jid)
-
             const previous_state = _converse.windowState;
             const message = 'This message will increment the message counter';
             const msg = $msg({
@@ -1186,9 +1188,7 @@ fdescribe("Chatboxes", function () {
             spyOn(_converse, 'incrementMsgCounter').and.callThrough();
             spyOn(_converse, 'clearMsgCounter').and.callThrough();
 
-            const promise = new Promise(resolve => view.once('messageInserted', resolve));
             await _converse.handleMessageStanza(msg);
-            await promise;
             expect(_converse.incrementMsgCounter).toHaveBeenCalled();
             expect(_converse.clearMsgCounter).not.toHaveBeenCalled();
             expect(document.title).toBe('Messages (1) Converse Tests');
