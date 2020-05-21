@@ -188,16 +188,15 @@ converse.plugins.add('converse-chatview', {
             async initialize () {
                 this.initDebounced();
 
-                this.listenTo(this.model.messages, 'add', debounce(this.renderChatContent, 100));
-                this.listenTo(this.model.messages, 'change', debounce(this.renderChatContent, 100));
+                this.listenTo(this.model.notifications, 'change', this.debouncedChatContentRender);
+                this.listenTo(this.model.messages, 'add', this.debouncedChatContentRender);
+                this.listenTo(this.model.messages, 'change', this.debouncedChatContentRender);
 
                 this.listenTo(this.model.messages, 'rendered', this.scrollDown);
                 this.model.messages.on('reset', () => {
                     this.msgs_container.innerHTML = '';
                     this.removeAll();
                 });
-
-                this.listenTo(this.model.notifications, 'change', this.renderChatStateNotification);
 
                 this.listenTo(this.model, 'change:status', this.onStatusMessageChanged);
                 this.listenTo(this.model, 'destroy', this.remove);
@@ -230,6 +229,7 @@ converse.plugins.add('converse-chatview', {
             initDebounced () {
                 this.scrollDown = debounce(this._scrollDown, 50);
                 this.markScrolled = debounce(this._markScrolled, 100);
+                this.debouncedChatContentRender = debounce(this.renderChatContent, 100);
             },
 
             async render () {
@@ -242,33 +242,37 @@ converse.plugins.add('converse-chatview', {
                     )
                 );
                 render(result, this.el);
+                this.tpl_chat_content = (o) => {
+                    return html`<converse-chat-content .chatview=${this} .messages=${o.messages}></converse-chat-content>`
+                };
                 this.content = this.el.querySelector('.chat-content');
                 this.notifications = this.el.querySelector('.chat-content__notifications');
                 this.msgs_container = this.el.querySelector('.chat-content__messages');
                 this.help_container = this.el.querySelector('.chat-content__help');
-                this.renderChatStateNotification();
-                await this.renderChatContent();
+                await api.waitUntil('emojisInitialized');
+                this.renderChatContent();
                 this.renderMessageForm();
                 this.renderHeading();
                 return this;
             },
 
-            renderChatStateNotification () {
+            getNotifications () {
                 if (this.model.notifications.get('chat_state') === _converse.COMPOSING) {
-                    this.notifications.innerText = __('%1$s is typing', this.model.getDisplayName());
+                    return __('%1$s is typing', this.model.getDisplayName());
                 } else if (this.model.notifications.get('chat_state') === _converse.PAUSED) {
-                    this.notifications.innerText = __('%1$s has stopped typing', this.model.getDisplayName());
+                    return __('%1$s has stopped typing', this.model.getDisplayName());
                 } else if (this.model.notifications.get('chat_state') === _converse.GONE) {
-                    this.notifications.innerText = __('%1$s has gone away', this.model.getDisplayName());
+                    return __('%1$s has gone away', this.model.getDisplayName());
                 } else {
-                    this.notifications.innerText = '';
+                    return '';
                 }
             },
 
-            async renderChatContent () {
-                await api.waitUntil('emojisInitialized');
-                const tpl = (o) => html`<converse-chat-content .chatview=${this} .messages=${o.messages}></converse-chat-content>`;
-                render(tpl({'messages': Array.from(this.model.messages)}), this.msgs_container);
+            renderChatContent () {
+                render(this.tpl_chat_content({
+                    'notifications': this.getNotifications(),
+                    'messages': Array.from(this.model.messages)
+                }), this.msgs_container);
             },
 
             renderToolbar () {

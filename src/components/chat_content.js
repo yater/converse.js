@@ -3,11 +3,13 @@ import 'fa-icons';
 import dayjs from 'dayjs';
 import tpl_message from "templates/message.js";
 import tpl_new_day from "../templates//new_day.js";
+import xss from "xss/dist/xss";
 import { CustomElement } from './element.js';
 import { __ } from '@converse/headless/i18n';
 import { api } from "@converse/headless/converse-core";
 import { html } from 'lit-element';
 import { repeat } from 'lit-html/directives/repeat.js';
+import { unsafeHTML } from 'lit-html/directives/unsafe-html.js';
 
 const i18n_no_history = __('No message history available.');
 
@@ -35,14 +37,19 @@ class ChatContent extends CustomElement {
         return {
             chatview: { type: Object},
             messages: { type: Array},
+            notifications: { type: String }
         }
     }
 
     render () {
         const msgs = this.messages;
-        return msgs.length ?
-            html`${repeat(msgs, m => m.get('id'), m => this.renderMessage(m)) }` :
-            html`<div class="empty-history-feedback form-help"><span>${i18n_no_history}</span></div>`;
+        const notifications = xss.filterXSS(this.notifications, {'whiteList': {}});
+        return [
+            msgs.length ?
+                html`${repeat(msgs, m => m.get('id'), m => this.renderMessage(m)) }` :
+                html`<div class="empty-history-feedback form-help"><span>${i18n_no_history}</span></div>`,
+            html`<div class="chat-content__notifications">${unsafeHTML(notifications)}</div>`
+        ];
     }
 
     renderMessage (model) {

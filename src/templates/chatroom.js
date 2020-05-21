@@ -13,7 +13,6 @@ export default (o) => html`
                     <div class="chat-content__messages">
                         ${ o.muc_show_logs_before_join ? html`<div class="empty-history-feedback"><span>${ i18n_no_history }</span></div>`  : '' }
                     </div>
-                    <div class="chat-content__notifications"></div>
                     <div class="chat-content__help"></div>
                 </div>
                 <div class="bottom-panel"></div>

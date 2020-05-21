@@ -31,7 +31,7 @@ import { View } from 'skeletor.js/src/view.js';
 import { __ } from '@converse/headless/i18n';
 import { api, converse } from "@converse/headless/converse-core";
 import { debounce, head, isString, isUndefined } from "lodash";
-import { render } from "lit-html";
+import { html, render } from "lit-html";
 
 const { Strophe, sizzle, $iq, $pres } = converse.env;
 const u = converse.env.utils;
@@ -519,6 +519,10 @@ converse.plugins.add('converse-muc-views', {
                     'muc_show_logs_before_join': _converse.muc_show_logs_before_join,
                     'show_send_button': _converse.show_send_button
                 }), this.el);
+
+                this.tpl_chat_content = (o) => {
+                    return html`<converse-chat-content .chatview=${this} .messages=${o.messages}></converse-chat-content>`
+                };
                 this.notifications = this.el.querySelector('.chat-content__notifications');
                 this.content = this.el.querySelector('.chat-content');
                 this.msgs_container = this.el.querySelector('.chat-content__messages');
@@ -536,13 +540,13 @@ converse.plugins.add('converse-muc-views', {
                 !this.model.get('hidden') && this.show();
             },
 
-            renderNotifications () {
+            getNotifications () {
                 const actors_per_state = this.model.notifications.toJSON();
                 const states = api.settings.get('muc_show_join_leave') ?
                     [...converse.CHAT_STATES, ...converse.MUC_TRAFFIC_STATES, ...converse.MUC_ROLE_CHANGES] :
                     converse.CHAT_STATES;
 
-                const message = states.reduce((result, state) => {
+                return states.reduce((result, state) => {
                     const existing_actors = actors_per_state[state];
                     if (!(existing_actors?.length)) {
                         return result;
@@ -599,8 +603,6 @@ converse.plugins.add('converse-muc-views', {
                     }
                     return result;
                 }, '');
-                this.notifications.innerHTML = message;
-                message.includes('\n') && this.scrollDown();
             },
 
             /**
