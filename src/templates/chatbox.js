@@ -7,6 +7,7 @@ export default (o) => html`
             <div class="chat-content ${ o.show_send_button ? 'chat-content-sendbutton' : '' }" @scroll=${o.markScrolled} aria-live="polite">
                 <div class="chat-content__messages"></div>
                 <div class="chat-content__notifications"></div>
+                <div class="chat-content__help"></div>
             </div>
             <div class="bottom-panel">
                 <div class="emoji-picker__container dropup"></div>

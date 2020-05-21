@@ -4,20 +4,19 @@
  * @license Mozilla Public License (MPLv2)
  */
 import "./components/chat_content.js";
+import "./components/help_messages.js";
 import "converse-chatboxviews";
 import "converse-modal";
 import log from "@converse/headless/log";
 import tpl_chatbox from "templates/chatbox.js";
 import tpl_chatbox_head from "templates/chatbox_head.js";
 import tpl_chatbox_message_form from "templates/chatbox_message_form.html";
-import tpl_help_message from "templates/help_message.html";
 import tpl_new_day from "templates/new_day.html";
 import tpl_spinner from "templates/spinner.html";
 import tpl_spoiler_button from "templates/spoiler_button.html";
 import tpl_toolbar from "templates/toolbar.html";
 import tpl_toolbar_fileupload from "templates/toolbar_fileupload.html";
 import tpl_user_details_modal from "templates/user_details_modal.js";
-import xss from "xss/dist/xss";
 import { BootstrapModal } from "./converse-modal.js";
 import { Overview } from "skeletor.js/src/overview";
 import { __ } from '@converse/headless/i18n';
@@ -246,6 +245,7 @@ converse.plugins.add('converse-chatview', {
                 this.content = this.el.querySelector('.chat-content');
                 this.notifications = this.el.querySelector('.chat-content__notifications');
                 this.msgs_container = this.el.querySelector('.chat-content__messages');
+                this.help_container = this.el.querySelector('.chat-content__help');
                 this.renderChatStateNotification();
                 await this.renderChatContent();
                 this.renderMessageForm();
@@ -630,22 +630,11 @@ converse.plugins.add('converse-chatview', {
                 });
             },
 
-            showHelpMessages (msgs, type='info', spinner) {
-                msgs.forEach(msg => {
-                    this.msgs_container.insertAdjacentHTML(
-                        'beforeend',
-                        tpl_help_message({
-                            'isodate': (new Date()).toISOString(),
-                            'type': type,
-                            'message': xss.filterXSS(msg, {'whiteList': {'strong': []}})
-                        })
-                    );
-                });
-                if (spinner === true) {
-                    this.addSpinner();
-                } else if (spinner === false) {
-                    this.clearSpinner();
-                }
+            showHelpMessages (msgs, type='info') {
+                render(
+                    html`<converse-chat-help .messages=${msgs} type="${type}" chat_type="${this.model.get('type')}"></converse-chat-help>`,
+                    this.help_container
+                );
                 return this.scrollDown();
             },
 

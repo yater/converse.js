@@ -522,6 +522,7 @@ converse.plugins.add('converse-muc-views', {
                 this.notifications = this.el.querySelector('.chat-content__notifications');
                 this.content = this.el.querySelector('.chat-content');
                 this.msgs_container = this.el.querySelector('.chat-content__messages');
+                this.help_container = this.el.querySelector('.chat-content__help');
 
                 this.renderBottomPanel();
                 if (!_converse.muc_show_logs_before_join &&

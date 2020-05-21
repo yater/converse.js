@@ -128,7 +128,7 @@ class Message extends CustomElement {
                                         title="${i18n_edit_message}"
                                         @click=${this.onMessageEditButtonClicked}
                                     >
-                                    <fa-icon class="fas fa-pencil-alt" path-prefix="/node_modules" color="var(--text-color-lighten-15-percent)" size="1em"></fa-icon>
+                                    <fa-icon class="fas fa-pencil-alt" path-prefix="dist" color="var(--text-color-lighten-15-percent)" size="1em"></fa-icon>
                                 </button>` : '' }
                             ${ renderRetractionLink(this) }
                         </div>

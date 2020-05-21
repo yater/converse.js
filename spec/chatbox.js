@@ -20,7 +20,8 @@ fdescribe("Chatboxes", function () {
             const view = _converse.chatboxviews.get(contact_jid);
             mock.sendMessage(view, '/help');
 
-            const info_messages = Array.prototype.slice.call(view.el.querySelectorAll('.chat-info:not(.chat-date)'), 0);
+            await u.waitUntil(() => sizzle('.chat-info:not(.chat-date)', view.el).length);
+            const info_messages = await u.waitUntil(() => sizzle('.chat-info:not(.chat-date)', view.el));
             expect(info_messages.length).toBe(4);
             expect(info_messages.pop().textContent).toBe('/help: Show this menu');
             expect(info_messages.pop().textContent).toBe('/me: Write in the third person');
