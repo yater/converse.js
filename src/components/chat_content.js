@@ -10,7 +10,6 @@ import { html } from 'lit-element';
 import { repeat } from 'lit-html/directives/repeat.js';
 
 const i18n_no_history = __('No message history available.');
-const tpl_no_msgs = html`<div class="empty-history-feedback"><span>${i18n_no_history}</span></div>`
 
 
 // Return a TemplateResult indicating a new day if the passed in message is
@@ -80,7 +79,9 @@ class ChatContent extends CustomElement {
 
     render () {
         const msgs = this.messages;
-        return html`${ !msgs.length ? tpl_no_msgs : repeat(msgs, m => m.get('id'), m => renderMessage(m)) }`;
+        return msgs.length ?
+            html`${repeat(msgs, m => m.get('id'), m => renderMessage(m)) }` :
+            html`<div class="empty-history-feedback form-help"><span>${i18n_no_history}</span></div>`;
     }
 }
 
