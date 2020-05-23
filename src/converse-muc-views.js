@@ -459,14 +459,11 @@ converse.plugins.add('converse-muc-views', {
             async initialize () {
                 this.initDebounced();
 
-                this.listenTo(this.model.messages, 'add', debounce(this.renderChatContent, 100));
-                this.listenTo(this.model.messages, 'change', debounce(this.renderChatContent, 100));
-
+                this.listenTo(this.model.messages, 'add', this.renderChatHistory);
+                this.listenTo(this.model.messages, 'change', this.renderChatHistory);
                 this.listenTo(this.model.messages, 'rendered', this.scrollDown);
-                this.model.messages.on('reset', () => {
-                    this.msgs_container.innerHTML = '';
-                    this.removeAll();
-                });
+                this.listenTo(this.model.messages, 'reset', this.renderChatHistory);
+                this.listenTo(this.model.notifications, 'change', this.renderNotifications);
 
                 this.listenTo(this.model.session, 'change:connection_status', this.onConnectionStatusChanged);
 
@@ -1665,23 +1662,6 @@ converse.plugins.add('converse-muc-views', {
                 const container = this.el.querySelector('.disconnect-container');
                 container.innerHTML = tpl_chatroom_disconnect({messages})
                 u.showElement(container);
-            },
-
-            removeEmptyHistoryFeedback () {
-                const el = this.msgs_container.firstElementChild;
-                if (_converse.muc_show_logs_before_join && el && el.matches('.empty-history-feedback')) {
-                    this.msgs_container.removeChild(this.msgs_container.firstElementChild);
-                }
-            },
-
-            insertDayIndicator () {
-                this.removeEmptyHistoryFeedback();
-                return _converse.ChatBoxView.prototype.insertDayIndicator.apply(this, arguments);
-            },
-
-            insertMessage (view) {
-                this.removeEmptyHistoryFeedback();
-                return _converse.ChatBoxView.prototype.insertMessage.call(this, view);
             },
 
             onOccupantAdded (occupant) {

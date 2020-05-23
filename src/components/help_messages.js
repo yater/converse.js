@@ -1,8 +1,9 @@
+import 'fa-icons';
 import xss from "xss/dist/xss";
 import { CustomElement } from './element.js';
+import { _converse } from "@converse/headless/converse-core";
 import { html } from 'lit-element';
 import { unsafeHTML } from 'lit-html/directives/unsafe-html.js';
-import { _converse } from "@converse/headless/converse-core";
 
 
 class ChatHelp extends CustomElement {

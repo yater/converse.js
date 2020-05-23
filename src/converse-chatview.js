@@ -18,14 +18,14 @@ import tpl_toolbar from "templates/toolbar.html";
 import tpl_toolbar_fileupload from "templates/toolbar_fileupload.html";
 import tpl_user_details_modal from "templates/user_details_modal.js";
 import { BootstrapModal } from "./converse-modal.js";
-import { Overview } from "skeletor.js/src/overview";
+import { View } from 'skeletor.js/src/view.js';
 import { __ } from '@converse/headless/i18n';
 import { _converse, api, converse } from "@converse/headless/converse-core";
 import { debounce, isString } from "lodash";
 import { html, render } from "lit-html";
 
 
-const { Strophe, sizzle, dayjs } = converse.env;
+const { Strophe, dayjs } = converse.env;
 const u = converse.env.utils;
 
 
@@ -163,7 +163,7 @@ converse.plugins.add('converse-chatview', {
          * @namespace _converse.ChatBoxView
          * @memberOf _converse
          */
-        _converse.ChatBoxView = Overview.extend({
+        _converse.ChatBoxView = View.extend({
             length: 200,
             className: 'chatbox hidden',
             is_chatroom: false,  // Leaky abstraction from MUC
@@ -188,15 +188,10 @@ converse.plugins.add('converse-chatview', {
             async initialize () {
                 this.initDebounced();
 
-                this.listenTo(this.model.notifications, 'change', this.debouncedChatContentRender);
-                this.listenTo(this.model.messages, 'add', this.debouncedChatContentRender);
-                this.listenTo(this.model.messages, 'change', this.debouncedChatContentRender);
-
-                this.listenTo(this.model.messages, 'rendered', this.scrollDown);
-                this.model.messages.on('reset', () => {
-                    this.msgs_container.innerHTML = '';
-                    this.removeAll();
-                });
+                this.listenTo(this.model.messages, 'add', this.renderChatHistory);
+                this.listenTo(this.model.messages, 'change', this.renderChatHistory);
+                this.listenTo(this.model.messages, 'reset', this.renderChatHistory);
+                this.listenTo(this.model.notifications, 'change', this.renderNotifications);
 
                 this.listenTo(this.model, 'change:status', this.onStatusMessageChanged);
                 this.listenTo(this.model, 'destroy', this.remove);
@@ -227,9 +222,9 @@ converse.plugins.add('converse-chatview', {
             },
 
             initDebounced () {
-                this.scrollDown = debounce(this._scrollDown, 50);
                 this.markScrolled = debounce(this._markScrolled, 100);
-                this.debouncedChatContentRender = debounce(this.renderChatContent, 100);
+                this.renderChatHistory = debounce(() => this.renderChatContent(false), 100);
+                this.renderNotifications = debounce(() => this.renderChatContent(true), 100);
             },
 
             async render () {
@@ -243,7 +238,12 @@ converse.plugins.add('converse-chatview', {
                 );
                 render(result, this.el);
                 this.tpl_chat_content = (o) => {
-                    return html`<converse-chat-content .chatview=${this} .messages=${o.messages}></converse-chat-content>`
+                    return html`
+                        <converse-chat-content
+                            .chatview=${this}
+                            .messages=${o.messages}
+                            .notifications=${o.notifications}>
+                        </converse-chat-content>`
                 };
                 this.content = this.el.querySelector('.chat-content');
                 this.notifications = this.el.querySelector('.chat-content__notifications');
@@ -268,11 +268,12 @@ converse.plugins.add('converse-chatview', {
                 }
             },
 
-            renderChatContent () {
-                render(this.tpl_chat_content({
-                    'notifications': this.getNotifications(),
-                    'messages': Array.from(this.model.messages)
-                }), this.msgs_container);
+            renderChatContent (msgs_by_ref=false) {
+                const messages = msgs_by_ref ? this.model.messages : Array.from(this.model.messages);
+                render(
+                    this.tpl_chat_content({ messages, 'notifications': this.getNotifications() }),
+                    this.msgs_container
+                );
             },
 
             renderToolbar () {
@@ -487,7 +488,6 @@ converse.plugins.add('converse-chatview', {
                 this.renderChatContent();
                 this.insertIntoDOM();
                 this.scrollDown();
-                this.content.addEventListener('scroll', () => this.markScrolled());
                 /**
                  * Triggered whenever a `_converse.ChatBox` instance has fetched its messages from
                  * `sessionStorage` but **NOT** from the server.
@@ -495,7 +495,12 @@ converse.plugins.add('converse-chatview', {
                  * @type {_converse.ChatBoxView | _converse.ChatRoomView}
                  * @example _converse.api.listen.on('afterMessagesFetched', view => { ... });
                  */
-                api.trigger('afterMessagesFetched', this);
+                api.trigger('afterMessagesFetched', this.model);
+            },
+
+            scrollDown () {
+                const el = this.msgs_container.firstElementChild;
+                el && el.scrollDown();
             },
 
             insertIntoDOM () {
@@ -554,47 +559,6 @@ converse.plugins.add('converse-chatview', {
                 }
             },
 
-            /**
-             * Return the ISO8601 format date of the latest message.
-             * @private
-             * @method _converse.ChatBoxView#getLastMessageDate
-             * @param { Date } cutoff - Moment Date cutoff date. The last
-             *      message received cutoff this date will be returned.
-             * @returns { Date }
-             */
-            getLastMessageDate (cutoff) {
-                const sel = '.msg-wrapper';
-                const first_msg = u.getFirstChildElement(this.msgs_container, sel);
-                const oldest_date = first_msg ? first_msg.getAttribute('data-isodate') : null;
-                if (oldest_date !== null && dayjs(oldest_date).isAfter(cutoff)) {
-                    return null;
-                }
-                const last_msg = u.getLastChildElement(this.msgs_container, sel);
-                const most_recent_date = last_msg ? last_msg.getAttribute('data-isodate') : null;
-                if (most_recent_date === null) {
-                    return null;
-                }
-                if (dayjs(most_recent_date).isBefore(cutoff)) {
-                    return dayjs(most_recent_date).toDate();
-                }
-                /* XXX: We avoid .chat-state-notification messages, since they are
-                 * temporary and get removed once a new element is
-                 * inserted into the chat area, so we don't query for
-                 * them here, otherwise we get a null reference later
-                 * upon element insertion.
-                 */
-                const msg_dates = sizzle(sel, this.msgs_container).map(e => e.getAttribute('data-isodate'));
-                const cutoff_iso = cutoff.toISOString();
-                msg_dates.push(cutoff_iso);
-                msg_dates.sort();
-                const idx = msg_dates.lastIndexOf(cutoff_iso);
-                if (idx === 0) {
-                    return null;
-                } else {
-                    return dayjs(msg_dates[idx-1]).toDate();
-                }
-            },
-
             setScrollPosition (message_el) {
                 /* Given a newly inserted message, determine whether we
                  * should keep the scrollbar in place (so as to not scroll
@@ -644,40 +608,6 @@ converse.plugins.add('converse-chatview', {
 
             shouldShowOnTextMessage () {
                 return !u.isVisible(this.el);
-            },
-
-            /**
-             * Given a view representing a message, insert it into the
-             * content area of the chat box.
-             * @private
-             * @method _converse.ChatBoxView#insertMessage
-             * @param { View } message - The message View
-             */
-            insertMessage (view) {
-                if (view.model.get('type') === 'error') {
-                    const previous_msg_el = this.msgs_container.querySelector(`[data-msgid="${view.model.get('msgid')}"]`);
-                    if (previous_msg_el) {
-                        previous_msg_el.insertAdjacentElement('afterend', view.el);
-                        return this.trigger('messageInserted', view.el);
-                    }
-                }
-                const current_msg_date = dayjs(view.model.get('time')).toDate() || new Date();
-                const previous_msg_date = this.getLastMessageDate(current_msg_date);
-
-                if (previous_msg_date === null) {
-                    this.msgs_container.insertAdjacentElement('afterbegin', view.el);
-                } else {
-                    const previous_msg_el = sizzle(`[data-isodate="${previous_msg_date.toISOString()}"]:last`, this.msgs_container).pop();
-                    if (view.model.get('type') === 'error' &&
-                            u.hasClass('chat-error', previous_msg_el) &&
-                            previous_msg_el.textContent === view.model.get('message')) {
-                        // We don't show a duplicate error message
-                        return;
-                    }
-                    previous_msg_el.insertAdjacentElement('afterend', view.el);
-                    this.markFollowups(view.el);
-                }
-                return this.trigger('messageInserted', view.el);
             },
 
             /**
@@ -750,10 +680,8 @@ converse.plugins.add('converse-chatview', {
                     return;
                 }
                 if (!_converse.connection.authenticated) {
-                    this.showHelpMessages(
-                        ['Sorry, the connection has been lost, and your message could not be sent'],
-                        'error'
-                    );
+                    const err_msg = __('Sorry, the connection has been lost, and your message could not be sent');
+                    api.alert('error', __('Error'), err_msg);
                     api.connection.reconnect();
                     return;
                 }
@@ -1213,21 +1141,6 @@ converse.plugins.add('converse-chatview', {
             viewUnreadMessages () {
                 this.model.save({'scrolled': false, 'top_visible_message': null});
                 this.scrollDown();
-            },
-
-            _scrollDown () {
-                /* Inner method that gets debounced */
-                if (this.content === undefined) {
-                    return;
-                }
-                if (u.isVisible(this.content) && !this.model.get('scrolled')) {
-                    if ((this.content.scrollTop === 0 || this.content.scrollTop < this.content.scrollHeight/2)) {
-                        u.removeClass('smooth-scroll', this.content);
-                    } else if (api.settings.get('animate')) {
-                        u.addClass('smooth-scroll', this.content);
-                    }
-                    this.content.scrollTop = this.content.scrollHeight;
-                }
             },
 
             onScrolledDown () {
