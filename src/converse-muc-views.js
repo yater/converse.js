@@ -31,7 +31,7 @@ import { View } from 'skeletor.js/src/view.js';
 import { __ } from '@converse/headless/i18n';
 import { api, converse } from "@converse/headless/converse-core";
 import { debounce, head, isString, isUndefined } from "lodash";
-import { html, render } from "lit-html";
+import { render } from "lit-html";
 
 const { Strophe, sizzle, $iq, $pres } = converse.env;
 const u = converse.env.utils;
@@ -790,7 +790,7 @@ converse.plugins.add('converse-muc-views', {
                     if (_converse.show_retraction_warning) {
                         messages[1] = retraction_warning;
                     }
-                    !!(await api.confirm(__('Confirm'), messages)) && this.retractOwnMessage(message);
+                    !!(await api.confirm(__('Confirm'), messages)) && this.model.retractOwnMessage(message);
                 } else if (await message.mayBeModerated()) {
                     if (message.get('sender') === 'me') {
                         let messages = [__('Are you sure you want to retract this message?')];
@@ -817,22 +817,6 @@ converse.plugins.add('converse-muc-views', {
                     const err_msg = __(`Sorry, you're not allowed to retract this message`);
                     api.alert('error', __('Error'), err_msg);
                 }
-            },
-
-            /**
-             * Retract one of your messages in this groupchat.
-             * @private
-             * @method _converse.ChatRoomView#retractOwnMessage
-             * @param { _converse.Message } message - The message which we're retracting.
-             */
-            retractOwnMessage(message) {
-                this.model.retractOwnMessage(message)
-                    .catch(e => {
-                        const message = __('Sorry, something went wrong while trying to retract your message.');
-                        this.model.createMessage({message, 'type': 'error'});
-                        !u.isErrorStanza(e) && this.model.createMessage({'message': e.message, 'type': 'error'});
-                        log.error(e);
-                    });
             },
 
             /**

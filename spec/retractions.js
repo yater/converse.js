@@ -2,6 +2,7 @@
 
 const { Strophe, $iq } = converse.env;
 const u = converse.env.utils;
+const original_timeout = jasmine.DEFAULT_TIMEOUT_INTERVAL;
 
 
 async function sendAndThenRetractMessage (_converse, view) {
@@ -33,6 +34,9 @@ async function sendAndThenRetractMessage (_converse, view) {
 
 
 fdescribe("Message Retractions", function () {
+
+    beforeEach(() => (jasmine.DEFAULT_TIMEOUT_INTERVAL = 7000));
+    afterEach(() => (jasmine.DEFAULT_TIMEOUT_INTERVAL = original_timeout));
 
     describe("A groupchat message retraction", function () {
 
@@ -180,6 +184,7 @@ fdescribe("Message Retractions", function () {
             _converse.connection._dataRecv(mock.createRequest(received_stanza));
             await u.waitUntil(() => view.model.handleModeration.calls.count() === 2);
 
+            await u.waitUntil(() => view.el.querySelectorAll('.chat-msg').length);
             expect(view.el.querySelectorAll('.chat-msg').length).toBe(1);
             expect(view.model.messages.length).toBe(1);
 
@@ -701,7 +706,7 @@ fdescribe("Message Retractions", function () {
             expect(view.model.messages.at(0).get('editable')).toBeTruthy();
 
             const errmsg = view.el.querySelector('.chat-msg__error');
-            expect(errmsg.textContent.trim()).toBe("Your message was not delivered because you weren't allowed to send it.");
+            expect(errmsg.textContent.trim()).toBe("You're not allowed to retract your message.");
             done();
         }));
 
@@ -721,25 +726,23 @@ fdescribe("Message Retractions", function () {
             occupant.save('role', 'member');
             await u.waitUntil(() => view.el.querySelector('.chat-content__notifications').textContent.includes("romeo is no longer a moderator"))
             await sendAndThenRetractMessage(_converse, view);
-            await u.waitUntil(() => view.el.querySelectorAll('.chat-msg--retracted').length === 1);
-
             expect(view.model.messages.length).toBe(1);
             expect(view.model.messages.last().get('retracted')).toBeTruthy();
+            await u.waitUntil(() => view.el.querySelectorAll('.chat-msg--retracted').length === 1);
             const el = view.el.querySelector('.chat-msg--retracted .chat-msg__message div');
             expect(el.textContent.trim()).toBe('romeo has removed this message');
 
             await u.waitUntil(() => view.el.querySelectorAll('.chat-msg').length === 1);
 
             await u.waitUntil(() => view.el.querySelectorAll('.chat-msg--retracted').length === 0);
-            expect(view.model.messages.length).toBe(3);
+            expect(view.model.messages.length).toBe(1);
             expect(view.model.messages.at(0).get('retracted')).toBeFalsy();
             expect(view.model.messages.at(0).get('is_ephemeral')).toBeFalsy();
             expect(view.model.messages.at(0).get('editable')).toBeTruthy();
 
-            const error_messages = view.el.querySelectorAll('.chat-error');
-            expect(error_messages.length).toBe(2);
-            expect(error_messages[0].textContent.trim()).toBe("Sorry, something went wrong while trying to retract your message.");
-            expect(error_messages[1].textContent.trim()).toBe("Timeout Error: No response from server");
+            const error_messages = view.el.querySelectorAll('.chat-msg__error');
+            expect(error_messages.length).toBe(1);
+            expect(error_messages[0].textContent.trim()).toBe('A timeout happened while while trying to retract your message.');
             done();
         }));
 
