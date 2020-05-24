@@ -382,8 +382,8 @@ converse.plugins.add('converse-muc', {
                 this.initialized = u.getResolveablePromise();
                 this.debouncedRejoin = debounce(this.rejoin, 250);
                 this.set('box_id', `box-${btoa(this.get('jid'))}`);
-                this.initMessages();
                 this.initNotifications();
+                this.initMessages();
                 this.initOccupants();
                 this.initDiscoModels(); // sendChatState depends on this.features
                 this.registerHandlers();

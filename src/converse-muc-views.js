@@ -517,9 +517,6 @@ converse.plugins.add('converse-muc-views', {
                     'show_send_button': _converse.show_send_button
                 }), this.el);
 
-                this.tpl_chat_content = (o) => {
-                    return html`<converse-chat-content .chatview=${this} .messages=${o.messages}></converse-chat-content>`
-                };
                 this.notifications = this.el.querySelector('.chat-content__notifications');
                 this.content = this.el.querySelector('.chat-content');
                 this.msgs_container = this.el.querySelector('.chat-content__messages');

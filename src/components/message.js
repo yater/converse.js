@@ -26,6 +26,7 @@ class Message extends CustomElement {
             chatview: { type: Object},
             correcting: { type: Boolean },
             editable: { type: Boolean },
+            error: { type: String },
             first_unread: { type: Boolean },
             from: { type: String },
             has_mentions: { type: Boolean },
@@ -232,8 +233,9 @@ class Message extends CustomElement {
                 ?is_only_emojis="${this.is_only_emojis}"
                 ?is_spoiler="${this.is_spoiler}"
                 ?is_spoiler_visible="${this.is_spoiler_visible}"
-                text="${this.model.getMessageText()}"/>
+                text="${this.model.getMessageText()}"></converse-chat-message-body>
             ${ this.oob_url ? html`<div class="chat-msg__media">${u.getOOBURLMarkup(_converse, this.oob_url)}</div>` : '' }
+            <div class="chat-msg__error">${this.error}</div>
         `;
     }
 

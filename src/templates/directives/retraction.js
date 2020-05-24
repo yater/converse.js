@@ -5,7 +5,7 @@ import { __ } from '@converse/headless/i18n';
 const i18n_retract_message = __('Retract this message');
 const tpl_retract = (o) => html`
     <button class="chat-msg__action chat-msg__action-retract" title="${i18n_retract_message}" @click=${o.onMessageRetractButtonClicked}>
-        <fa-icon class="fas fa-trash-alt" path-prefix="/node_modules" color="var(--text-color-lighten-15-percent)" size="1em"></fa-icon>
+        <fa-icon class="fas fa-trash-alt" path-prefix="/dist" color="var(--text-color-lighten-15-percent)" size="1em"></fa-icon>
     </button>
 `;
 

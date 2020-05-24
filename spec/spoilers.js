@@ -1,6 +1,6 @@
 /* global mock */
 
-fdescribe("A spoiler message", function () {
+describe("A spoiler message", function () {
 
     it("can be received with a hint",
         mock.initConverse(

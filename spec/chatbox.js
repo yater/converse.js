@@ -6,7 +6,7 @@ const Strophe = converse.env.Strophe;
 const u = converse.env.utils;
 const sizzle = converse.env.sizzle;
 
-fdescribe("Chatboxes", function () {
+describe("Chatboxes", function () {
 
     describe("A Chatbox", function () {
 

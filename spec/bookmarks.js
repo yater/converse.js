@@ -1,6 +1,6 @@
 /* global mock */
 
-fdescribe("A chat room", function () {
+describe("A chat room", function () {
 
     it("can be bookmarked", mock.initConverse(['rosterGroupsFetched'], {}, async function (done, _converse) {
 

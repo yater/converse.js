@@ -52,10 +52,10 @@ class MessageHistory extends CustomElement {
         const day = getDayIndicator(model);
         const templates = day ? [day] : [];
         const is_retracted = model.get('retracted') || model.get('moderated') === 'retracted';
-        const is_groupchat_message = model.get('type') === 'groupchat';
+        const is_groupchat = model.get('type') === 'groupchat';
 
         let hats = [];
-        if (is_groupchat_message) {
+        if (is_groupchat) {
             if (api.settings.get('muc_hats_from_vcard')) {
                 const role = model.vcard ? model.vcard.get('role') : null;
                 hats = role ? role.split(',') : [];
@@ -64,14 +64,16 @@ class MessageHistory extends CustomElement {
             }
         }
 
+        const chatbox = this.chatview.model;
+        const has_mentions = is_groupchat && model.get('sender') === 'them' && chatbox.isUserMentioned(model);
         const message = tpl_message(
             Object.assign(model.toJSON(), {
                 'chatview': this.chatview,
                 'is_me_message': model.isMeCommand(),
                 'occupant': model.occupant,
                 'username': model.getDisplayName(),
+                has_mentions,
                 hats,
-                is_groupchat_message,
                 is_retracted,
                 model,
             }));

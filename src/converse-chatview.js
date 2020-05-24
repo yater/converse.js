@@ -237,14 +237,6 @@ converse.plugins.add('converse-chatview', {
                     )
                 );
                 render(result, this.el);
-                this.tpl_chat_content = (o) => {
-                    return html`
-                        <converse-chat-content
-                            .chatview=${this}
-                            .messages=${o.messages}
-                            .notifications=${o.notifications}>
-                        </converse-chat-content>`
-                };
                 this.content = this.el.querySelector('.chat-content');
                 this.notifications = this.el.querySelector('.chat-content__notifications');
                 this.msgs_container = this.el.querySelector('.chat-content__messages');
@@ -269,7 +261,18 @@ converse.plugins.add('converse-chatview', {
             },
 
             renderChatContent (msgs_by_ref=false) {
-                const messages = msgs_by_ref ? this.model.messages : Array.from(this.model.messages);
+                if (!this.tpl_chat_content) {
+                    this.tpl_chat_content = (o) => {
+                        return html`
+                            <converse-chat-content
+                                .chatview=${this}
+                                .messages=${o.messages}
+                                notifications=${o.notifications}>
+                            </converse-chat-content>`
+                    };
+                }
+                const msg_models = this.model.messages.models;
+                const messages = msgs_by_ref ? msg_models : Array.from(msg_models);
                 render(
                     this.tpl_chat_content({ messages, 'notifications': this.getNotifications() }),
                     this.msgs_container

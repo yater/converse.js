@@ -331,8 +331,8 @@ converse.plugins.add('converse-chat', {
                     return;
                 }
                 this.set({'box_id': `box-${btoa(jid)}`});
-                this.initMessages();
                 this.initNotifications();
+                this.initMessages();
 
                 if (this.get('type') === _converse.PRIVATE_CHAT_TYPE) {
                     this.presence = _converse.presences.findWhere({'jid': jid}) || _converse.presences.create({'jid': jid});
