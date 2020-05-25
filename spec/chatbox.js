@@ -5,8 +5,12 @@ const $msg = converse.env.$msg;
 const Strophe = converse.env.Strophe;
 const u = converse.env.utils;
 const sizzle = converse.env.sizzle;
+const original_timeout = jasmine.DEFAULT_TIMEOUT_INTERVAL;
 
 describe("Chatboxes", function () {
+
+    beforeEach(() => (jasmine.DEFAULT_TIMEOUT_INTERVAL = 7000));
+    afterEach(() => (jasmine.DEFAULT_TIMEOUT_INTERVAL = original_timeout));
 
     describe("A Chatbox", function () {
 

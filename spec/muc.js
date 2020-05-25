@@ -10,7 +10,7 @@ const Promise = converse.env.Promise;
 const sizzle = converse.env.sizzle;
 const u = converse.env.utils;
 
-fdescribe("Groupchats", function () {
+describe("Groupchats", function () {
 
     describe("The \"rooms\" API", function () {
 
@@ -3438,7 +3438,7 @@ fdescribe("Groupchats", function () {
         }));
 
 
-        fit("takes a /kick command to kick a user",
+        it("takes a /kick command to kick a user",
             mock.initConverse(
                 ['rosterGroupsFetched'], {},
                 async function (done, _converse) {
@@ -5190,31 +5190,41 @@ fdescribe("Groupchats", function () {
             await new Promise(resolve => view.model.messages.once('rendered', resolve));
 
             let stanza = u.toStanza(`
-                <message xmlns="jabber:client" type="error" to="troll@montague.lit/resource" from="trollbox@montague.lit">
+                <message id="${view.model.messages.at(0).get('msgid')}"
+                         xmlns="jabber:client"
+                         type="error"
+                         to="troll@montague.lit/resource"
+                         from="trollbox@montague.lit">
                     <error type="auth"><forbidden xmlns="urn:ietf:params:xml:ns:xmpp-stanzas"/></error>
                 </message>`);
             _converse.connection._dataRecv(mock.createRequest(stanza));
-            await new Promise(resolve => view.model.messages.once('rendered', resolve));
-            expect(view.el.querySelector('.chat-error').textContent.trim()).toBe(
+            await u.waitUntil(() => view.el.querySelector('.chat-msg__error')?.textContent.trim(), 1000);
+            expect(view.el.querySelector('.chat-msg__error').textContent.trim()).toBe(
                 "Your message was not delivered because you weren't allowed to send it.");
 
             textarea.value = 'Hello again';
             view.onFormSubmitted(new Event('submit'));
-            await new Promise(resolve => view.model.messages.once('rendered', resolve));
+            await u.waitUntil(() => view.el.querySelectorAll('.chat-msg__text').length === 2);
 
             stanza = u.toStanza(`
-                <message xmlns="jabber:client" type="error" to="troll@montague.lit/resource" from="trollbox@montague.lit">
+                <message id="${view.model.messages.at(1).get('msgid')}"
+                         xmlns="jabber:client"
+                         type="error"
+                         to="troll@montague.lit/resource"
+                         from="trollbox@montague.lit">
                     <error type="auth">
                         <forbidden xmlns="urn:ietf:params:xml:ns:xmpp-stanzas"/>
                         <text xmlns="urn:ietf:params:xml:ns:xmpp-stanzas">Thou shalt not!</text>
                     </error>
                 </message>`);
             _converse.connection._dataRecv(mock.createRequest(stanza));
-            await new Promise(resolve => view.model.messages.once('rendered', resolve));
 
-            expect(view.el.querySelector('.message:last-child').textContent.trim()).toBe(
+            await u.waitUntil(() => view.el.querySelectorAll('.chat-msg__error').length === 2);
+            const sel = 'converse-message-history converse-chat-message:last-child .chat-msg__error';
+            await u.waitUntil(() => view.el.querySelector(sel)?.textContent.trim());
+            expect(view.el.querySelector(sel).textContent.trim()).toBe(
                 'Your message was not delivered because you weren\'t allowed to send it. '+
-                'The message from the server is: "Thou shalt not!"')
+                'The following reason was provided:  Thou shalt not!')
             done();
         }));
 

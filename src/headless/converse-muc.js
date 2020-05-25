@@ -618,14 +618,19 @@ converse.plugins.add('converse-muc', {
                 }
             },
 
-            async handleErrormessageStanza (stanza) {
+            async handleErrorMessageStanza (stanza) {
                 const attrs = await st.parseMUCMessage(stanza, this, _converse);
                 if (!await this.shouldShowErrorMessage(attrs)) {
                     return;
                 }
                 const message = this.getMessageReferencedByError(attrs);
                 if (message) {
-                    const new_attrs = {'error': attrs.error };
+                    const new_attrs = {
+                        'error': attrs.error,
+                        'error_condition': attrs.error_condition,
+                        'error_text': attrs.error_text,
+                        'error_type': attrs.error_type,
+                    };
                     if (attrs.msgid === message.get('retraction_id')) {
                         // The error message refers to a retraction
                         new_attrs.retraction_id = undefined;
@@ -640,7 +645,7 @@ converse.plugins.add('converse-muc', {
                         }
                     } else if (!attrs.error) {
                         if (attrs.error_condition === 'forbidden') {
-                            new_attrs.error = __("You're not allowed to send a message.");
+                            new_attrs.error = __("Your message was not delivered because you weren't allowed to send it.");
                         } else if (attrs.error_condition === 'not-acceptable') {
                             new_attrs.error = __("Your message was not delivered because you're not present in the groupchat.");
                         } else {

@@ -395,7 +395,7 @@ converse.plugins.add('converse-chat', {
                 return this.messages.fetched;
             },
 
-            async handleErrormessageStanza (stanza) {
+            async handleErrorMessageStanza (stanza) {
                 const attrs = await st.parseMessage(stanza, _converse);
                 if (!await this.shouldShowErrorMessage(attrs)) {
                     return;
@@ -1175,7 +1175,7 @@ converse.plugins.add('converse-chat', {
                 return;
             }
             const chatbox = await api.chatboxes.get(from_jid);
-            chatbox?.handleErrormessageStanza(stanza);
+            chatbox?.handleErrorMessageStanza(stanza);
         }
 
 

@@ -16,6 +16,7 @@ const i18n_edited = __('This message has been edited');
 const i18n_show = __('Show more');
 const i18n_show_less = __('Show less');
 const i18n_uploading = __('Uploading file:')
+const i18n_reason = __('The following reason was provided: ')
 
 
 class Message extends CustomElement {
@@ -26,6 +27,7 @@ class Message extends CustomElement {
             correcting: { type: Boolean },
             editable: { type: Boolean },
             error: { type: String },
+            error_text: { type: String },
             first_unread: { type: Boolean },
             from: { type: String },
             has_mentions: { type: Boolean },
@@ -46,6 +48,7 @@ class Message extends CustomElement {
             occupant_role: { type: String },
             oob_url: { type: String },
             progress: { type: String },
+            reason: { type: String },
             received: { type: String },
             retractable: { type: Boolean },
             sender: { type: String },
@@ -77,7 +80,11 @@ class Message extends CustomElement {
                 data-type="${this.data_name}"
                 data-value="${this.data_value}">
 
-                ${this.model.getMessageText()}
+                <div class="chat-info__message">
+                    ${ this.model.getMessageText() }
+                </div>
+                ${ this.reason ? html`<q class="reason">${this.reason}</q>` : `` }
+                ${ this.error_text ? html`<q class="reason">${this.error_text}</q>` : `` }
                 ${ this.retry ? html`<a class="retry" @click=${this.onRetryClicked}>${i18n_retry}</a>` : '' }
             </div>
         `;
@@ -234,7 +241,9 @@ class Message extends CustomElement {
                 ?is_spoiler_visible="${this.is_spoiler_visible}"
                 text="${this.model.getMessageText()}"></converse-chat-message-body>
             ${ this.oob_url ? html`<div class="chat-msg__media">${u.getOOBURLMarkup(_converse, this.oob_url)}</div>` : '' }
-            <div class="chat-msg__error">${this.error}</div>
+            <div class="chat-msg__error">
+                ${this.error} ${ this.error_text ? html`${i18n_reason} <q class="reason">${this.error_text}</q>` : `` }
+            </div>
         `;
     }
 
