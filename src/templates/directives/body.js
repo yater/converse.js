@@ -1,40 +1,8 @@
-import URI from "urijs";
-import xss from "xss/dist/xss";
 import { _converse, api, converse } from  "@converse/headless/converse-core";
 import { directive, html } from "lit-html";
 import { isString } from "lodash";
 
 const u = converse.env.utils;
-
-
-function onTagFoundDuringXSSFilter (tag, html, options) {
-    /* This function gets called by the XSS library whenever it finds
-     * what it thinks is a new HTML tag.
-     *
-     * It thinks that something like <https://example.com> is an HTML
-     * tag and then escapes the <> chars.
-     *
-     * We want to avoid this, because it prevents these URLs from being
-     * shown properly (whithout the trailing &gt;).
-     *
-     * The URI lib correctly trims a trailing >, but not a trailing &gt;
-     */
-    if (options.isClosing) {
-        // Closing tags don't match our use-case
-        return;
-    }
-    const uri = new URI(tag);
-    const protocol = uri.protocol().toLowerCase();
-    if (!["https", "http", "xmpp", "ftp"].includes(protocol)) {
-        // Not a URL, the tag will get filtered as usual
-        return;
-    }
-    if (uri.equals(tag) && `<${tag}>` === html.toLocaleLowerCase()) {
-        // We have something like <https://example.com>, and don't want
-        // to filter it.
-        return html;
-    }
-}
 
 
 class Markup extends String {
@@ -79,8 +47,7 @@ class MessageBodyRenderer extends String {
          */
         await api.trigger('beforeMessageBodyTransformed', this.model, this.text, {'Synchronous': true});
 
-        let text = xss.filterXSS(this.text, {'whiteList': {}, 'onTag': onTagFoundDuringXSSFilter});
-        text = this.component.is_me_message ? text.substring(4) : text;
+        let text = this.component.is_me_message ? this.text.substring(4) : this.text;
         text = u.geoUriToHttp(text, _converse.geouri_replacement);
 
         const process = (text) => {

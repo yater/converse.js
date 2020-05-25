@@ -1,6 +1,11 @@
 /* global mock */
 
+const original_timeout = jasmine.DEFAULT_TIMEOUT_INTERVAL;
+
 describe("A spoiler message", function () {
+
+    beforeEach(() => (jasmine.DEFAULT_TIMEOUT_INTERVAL = 7000));
+    afterEach(() => (jasmine.DEFAULT_TIMEOUT_INTERVAL = original_timeout));
 
     it("can be received with a hint",
         mock.initConverse(

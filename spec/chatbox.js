@@ -1620,7 +1620,7 @@ describe("Chatboxes", function () {
             const msg = sizzle('.chat-content .chat-msg:last .chat-msg__text', view.el).pop();
             expect(msg.innerHTML.replace(/\<!----\>/g, '')).toEqual(
                 '<a target="_blank" rel="noopener" href="https://www.openstreetmap.org/?mlat=37.786971&amp;'+
-                'mlon=-122.399677#map=18/37.786971/-122.399677">https://www.openstreetmap.org/?mlat=37.786971&amp;amp;mlon=-122.399677#map=18/37.786971/-122.399677</a>');
+                'mlon=-122.399677#map=18/37.786971/-122.399677">https://www.openstreetmap.org/?mlat=37.786971&amp;mlon=-122.399677#map=18/37.786971/-122.399677</a>');
             done();
         }));
     });

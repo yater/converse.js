@@ -33,7 +33,7 @@ async function sendAndThenRetractMessage (_converse, view) {
 }
 
 
-fdescribe("Message Retractions", function () {
+describe("Message Retractions", function () {
 
     beforeEach(() => (jasmine.DEFAULT_TIMEOUT_INTERVAL = 7000));
     afterEach(() => (jasmine.DEFAULT_TIMEOUT_INTERVAL = original_timeout));

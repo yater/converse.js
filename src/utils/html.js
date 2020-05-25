@@ -336,7 +336,7 @@ u.convertToImageTag = async function (url) {
 u.convertURIoHyperlink = function (uri, urlAsTyped) {
     let normalized_url = uri.normalize()._string;
     const pretty_url = uri._parts.urn ? normalized_url : uri.readable();
-    const visibleUrl = u.escapeHTML(urlAsTyped || pretty_url);
+    const visible_url = urlAsTyped || pretty_url;
     if (!uri._parts.protocol && !normalized_url.startsWith('http://') && !normalized_url.startsWith('https://')) {
         normalized_url = 'http://' + normalized_url;
     }
@@ -345,9 +345,9 @@ u.convertURIoHyperlink = function (uri, urlAsTyped) {
             <a target="_blank"
                rel="noopener"
                @click=${ev => api.rooms.open(ev.target.href)}
-               href="${normalized_url}">${visibleUrl}</a>`;
+               href="${normalized_url}">${visible_url}</a>`;
     }
-    return html`<a target="_blank" rel="noopener" href="${normalized_url}">${visibleUrl}</a>`;
+    return html`<a target="_blank" rel="noopener" href="${normalized_url}">${visible_url}</a>`;
 };
 
 function isProtocolApproved (protocol, safeProtocolsList = APPROVED_URL_PROTOCOLS) {
@@ -392,9 +392,12 @@ u.addHyperlinks = function (text) {
     if (objs.length) {
         objs.sort((a, b) => b.start - a.start)
             .forEach(url_obj => {
+                const url_text = text.slice(url_obj.start, url_obj.end);
                 const new_list = [
                     text.slice(0, url_obj.start),
-                    show_images && u.isImageURL(text) ? u.convertToImageTag(text) : u.convertUrlToHyperlink(text),
+                    show_images && u.isImageURL(url_text) ?
+                        u.convertToImageTag(url_text) :
+                        u.convertUrlToHyperlink(url_text),
                     text.slice(url_obj.end),
                     ...list
                 ];
