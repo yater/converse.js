@@ -7,7 +7,6 @@ import { _converse, api, converse } from  "@converse/headless/converse-core";
 import { html } from 'lit-element';
 import { renderAvatar } from './../templates/directives/avatar';
 import { renderRetractionLink } from './../templates/directives/retraction';
-import { unsafeHTML } from 'lit-html/directives/unsafe-html.js';
 
 const { Strophe } = converse.env;
 const u = converse.env.utils;
@@ -73,12 +72,12 @@ class Message extends CustomElement {
         const isodate = dayjs(this.model.get('time')).toISOString();
         const i18n_retry = __('Retry');
         return html`
-            <div class="message chat-info ${this.message_type}"
+            <div class="message chat-info chat-${this.message_type}"
                 data-isodate="${isodate}"
                 data-type="${this.data_name}"
                 data-value="${this.data_value}">
 
-                ${ this.render_message ? unsafeHTML(this.message) : this.message }
+                ${this.model.getMessageText()}
                 ${ this.retry ? html`<a class="retry" @click=${this.onRetryClicked}>${i18n_retry}</a>` : '' }
             </div>
         `;

@@ -1,16 +1,16 @@
 /*global mock */
 
-const _ = converse.env._,
-      $pres = converse.env.$pres,
-      $iq = converse.env.$iq,
-      $msg = converse.env.$msg,
-      Model = converse.env.Model,
-      Strophe = converse.env.Strophe,
-      Promise = converse.env.Promise,
-      sizzle = converse.env.sizzle,
-      u = converse.env.utils;
+const _ = converse.env._;
+const $pres = converse.env.$pres;
+const $iq = converse.env.$iq;
+const $msg = converse.env.$msg;
+const Model = converse.env.Model;
+const Strophe = converse.env.Strophe;
+const Promise = converse.env.Promise;
+const sizzle = converse.env.sizzle;
+const u = converse.env.utils;
 
-describe("Groupchats", function () {
+fdescribe("Groupchats", function () {
 
     describe("The \"rooms\" API", function () {
 
@@ -3438,7 +3438,7 @@ describe("Groupchats", function () {
         }));
 
 
-        it("takes a /kick command to kick a user",
+        fit("takes a /kick command to kick a user",
             mock.initConverse(
                 ['rosterGroupsFetched'], {},
                 async function (done, _converse) {
@@ -3520,6 +3520,7 @@ describe("Groupchats", function () {
                     }).c('actor', {'nick': 'romeo'}).up()
                       .c('reason').t("You're annoying").up().up()
                     .c('status', {'code': '307'});
+
             _converse.connection._dataRecv(mock.createRequest(presence));
 
             await u.waitUntil(() => view.el.querySelectorAll('.chat-info').length === 2);
