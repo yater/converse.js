@@ -232,6 +232,13 @@
                 justify-content: space-between;
             }
 
+            converse-chat-message {
+                .spinner {
+                    width: 100%;
+                    overflow-y: hidden;
+                }
+            }
+
             .chat-content__help {
                 converse-chat-help {
                     border-top: 1px solid var(--chat-head-color);
@@ -247,6 +254,7 @@
             }
 
             .chat-content__messages {
+                overflow-x: hidden;
                 overflow-y: auto;
                 height: 100%;
             }

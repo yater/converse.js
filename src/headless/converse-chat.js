@@ -535,7 +535,11 @@ converse.plugins.add('converse-chat', {
 
             async createMessageFromError (error) {
                 if (error instanceof _converse.TimeoutError) {
-                    const msg = await this.createMessage({'type': 'error', 'message': error.message, 'retry': true});
+                    const msg = await this.createMessage({
+                        'type': 'error',
+                        'message': error.message,
+                        'retry': true
+                    });
                     msg.error = error;
                 }
             },

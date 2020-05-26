@@ -6,6 +6,7 @@ export default (o) => html`
         .chatview=${o.chatview}
         .hats=${o.hats}
         .model=${o.model}
+        ?allow_retry=${o.retry}
         ?correcting=${o.correcting}
         ?editable=${o.editable}
         ?has_mentions=${o.has_mentions}

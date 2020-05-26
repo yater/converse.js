@@ -1,5 +1,6 @@
 import "./message-body.js";
 import MessageVersionsModal from '../modals/message-versions.js';
+import tpl_spinner from '../templates/spinner.js';
 import dayjs from 'dayjs';
 import { CustomElement } from './element.js';
 import { __ } from '@converse/headless/i18n';
@@ -23,6 +24,7 @@ class Message extends CustomElement {
 
     static get properties () {
         return {
+            allow_retry: { type: Boolean },
             chatview: { type: Object},
             correcting: { type: Boolean },
             editable: { type: Boolean },
@@ -52,6 +54,7 @@ class Message extends CustomElement {
             received: { type: String },
             retractable: { type: Boolean },
             sender: { type: String },
+            show_spinner: { type: Boolean },
             spoiler_hint: { type: String },
             subject: { type: String },
             time: { type: String },
@@ -62,7 +65,10 @@ class Message extends CustomElement {
     render () {
         const format = api.settings.get('time_format');
         this.pretty_time = dayjs(this.time).format(format);
-        if (this.model.get('file') && !this.model.get('oob_url')) {
+        if (this.show_spinner) {
+            return tpl_spinner();
+        }
+        else if (this.model.get('file') && !this.model.get('oob_url')) {
             return this.renderFileProgress();
         } else if (['error', 'info'].includes(this.message_type)) {
             return this.renderInfoMessage();
@@ -85,7 +91,7 @@ class Message extends CustomElement {
                 </div>
                 ${ this.reason ? html`<q class="reason">${this.reason}</q>` : `` }
                 ${ this.error_text ? html`<q class="reason">${this.error_text}</q>` : `` }
-                ${ this.retry ? html`<a class="retry" @click=${this.onRetryClicked}>${i18n_retry}</a>` : '' }
+                ${ this.allow_retry ? html`<a class="retry" @click=${this.onRetryClicked}>${i18n_retry}</a>` : '' }
             </div>
         `;
     }
@@ -145,8 +151,7 @@ class Message extends CustomElement {
     }
 
     async onRetryClicked () {
-        // FIXME
-        // this.showSpinner();
+        this.show_spinner = true;
         await this.model.error.retry();
         this.model.destroy();
         this.parentElement.removeChild(this);
