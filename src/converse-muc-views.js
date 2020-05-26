@@ -512,9 +512,11 @@ converse.plugins.add('converse-muc-views', {
 
             async render () {
                 this.el.setAttribute('id', this.model.get('box_id'));
+
                 render(tpl_chatroom({
                     'muc_show_logs_before_join': _converse.muc_show_logs_before_join,
                     'show_send_button': _converse.show_send_button
+                    'show_nickname_form': 
                 }), this.el);
 
                 this.notifications = this.el.querySelector('.chat-content__notifications');
@@ -1497,32 +1499,11 @@ converse.plugins.add('converse-muc-views', {
              * @method _converse.ChatRoomView#renderNicknameForm
              */
             renderNicknameForm () {
-                const heading = _converse.muc_show_logs_before_join ?
-                    __('Choose a nickname to enter') :
-                    __('Please choose your nickname');
-
-                const html = tpl_chatroom_nickname_form(Object.assign({
-                    heading,
-                    'label_nickname': __('Nickname'),
-                    'label_join': __('Enter groupchat'),
-                }, this.model.toJSON()));
-
-                if (_converse.muc_show_logs_before_join) {
-                    const container = this.el.querySelector('.muc-bottom-panel');
-                    container.innerHTML = html;
-                    u.addClass('muc-bottom-panel--nickname', container);
-                } else {
-                    const form = this.el.querySelector('.muc-nickname-form');
-                    if (form) {
-                        sizzle('.spinner', this.el).forEach(u.removeElement);
-                        form.outerHTML = html;
-                    } else {
-                        this.hideChatRoomContents();
-                        const container = this.el.querySelector('.chatroom-body');
-                        container.insertAdjacentHTML('beforeend', html);
-                    }
-                }
-                u.safeSave(this.model.session, {'connection_status': converse.ROOMSTATUS.NICKNAME_REQUIRED});
+                this.hideChatRoomContents();
+                const template = tpl_chatroom_nickname_form(this.model.toJSON());
+                const selector = _converse.muc_show_logs_before_join ? '.bottom-panel' : '.chatroom-forms';
+                const container = view.el.querySelector(selector);
+                render(template, container);
             },
 
             /**
@@ -1560,8 +1541,8 @@ converse.plugins.add('converse-muc-views', {
                 }
             },
 
-            hideChatRoomContents () {
-                const container_el = this.el.querySelector('.chatroom-body');
+            hideChatRoomContents (omit_selector) {
+                const container_el = omit_selector ? this.el.querySelector(`.chatroom-body:not(${omit_selector})`);
                 if (container_el !== null) {
                     [].forEach.call(container_el.children, child => child.classList.add('hidden'));
                 }
