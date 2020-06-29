@@ -21,7 +21,7 @@ export default class AutoCompleteComponent extends CustomElement {
 
     constructor () {
         super();
-        this.auto_evaluate = true; // Should evaluation happen automatically without any particular key as trigger?
+        this.auto_evaluate = false; // Should evaluation happen automatically without any particular key as trigger?
         this.auto_first = false; // Should the first element be automatically selected?
         this.filter = 'contains';
         this.include_triggers = ''; // Space separated chars which should be included in the returned value
@@ -35,7 +35,8 @@ export default class AutoCompleteComponent extends CustomElement {
         return html`
             <div class="suggestion-box suggestion-box__name">
                 <ul class="suggestion-box__results suggestion-box__results--above" hidden=""></ul>
-                <input type="text" name="${this.name}"
+                <input type="text"
+                       name="${this.name}"
                        autocomplete="off"
                        @keydown=${this.onKeyDown}
                        @keyup=${this.onKeyUp}

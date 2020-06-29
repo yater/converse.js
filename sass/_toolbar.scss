@@ -18,33 +18,31 @@
         }
     }
 
-    .chat-toolbar {
 
-        converse-chat-toolbar {
-            background-color: white;
-            box-sizing: border-box;
+    converse-chat-toolbar {
+        background-color: white;
+        box-sizing: border-box;
+        color: var(--chat-head-color);
+        display: flex;
+        justify-content: space-between;
+        margin: 0;
+        width: 100%;
+
+        .fa, .fa:hover,
+        .far, .far:hover,
+        .fas, .fas:hover {
             color: var(--chat-head-color);
-            display: flex;
-            justify-content: space-between;
-            margin: 0;
-            width: 100%;
-
-            .fa, .fa:hover,
-            .far, .far:hover,
-            .fas, .fas:hover {
-                color: var(--chat-head-color);
-                font-size: var(--font-size-large);
-                svg {
-                    fill: var(--chat-head-color);
-                }
+            font-size: var(--font-size-large);
+            svg {
+                fill: var(--chat-head-color);
             }
-            .unencrypted a,
-            .unencrypted {
-                color: var(--text-color);
-                .toolbar-menu {
-                    a {
-                        color: var(--link-color);
-                    }
+        }
+        .unencrypted a,
+        .unencrypted {
+            color: var(--text-color);
+            .toolbar-menu {
+                a {
+                    color: var(--link-color);
                 }
             }
         }
@@ -182,7 +180,7 @@
 }
 
 #conversejs.converse-overlayed  {
-    .chat-toolbar {
+    converse-chat-toolbar {
         li {
             .toolbar-menu {
                 min-width: 235px;
@@ -190,7 +188,7 @@
         }
     }
     .chatroom {
-        .chat-toolbar {
+        converse-chat-toolbar {
             li {
                 .toolbar-menu {
                     min-width: 280px;

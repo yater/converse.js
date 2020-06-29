@@ -24,7 +24,6 @@ export class ChatToolbar extends CustomElement {
             hidden_occupants: { type: Boolean },
             is_groupchat: { type: Boolean },
             message_limit: { type: Number },
-            model: { type: Object },
             show_call_button: { type: Boolean },
             show_emoji_button: { type: Boolean },
             show_occupants_toggle: { type: Boolean },
@@ -101,7 +100,7 @@ export class ChatToolbar extends CustomElement {
     }
 
     getSpoilerButton () {
-        const model = this.model;
+        const model = this.chatview.model;
         if (!this.is_groupchat && model.presence.resources.length === 0) {
             return;
         }
@@ -140,19 +139,19 @@ export class ChatToolbar extends CustomElement {
     }
 
     onFileSelection (evt) {
-        this.model.sendFiles(evt.target.files);
+        this.chatview.model.sendFiles(evt.target.files);
     }
 
     toggleComposeSpoilerMessage (ev) {
         ev?.preventDefault?.();
         ev?.stopPropagation?.();
-        this.model.set('composing_spoiler', !this.model.get('composing_spoiler'));
+        this.chatview.model.set('composing_spoiler', !this.chatview.model.get('composing_spoiler'));
     }
 
     toggleOccupants (ev) {
         ev?.preventDefault?.();
         ev?.stopPropagation?.();
-        this.model.save({'hidden_occupants': !this.model.get('hidden_occupants')});
+        this.chatview.model.save({'hidden_occupants': !this.chatview.model.get('hidden_occupants')});
     }
 
     toggleCall (ev) {
@@ -168,7 +167,7 @@ export class ChatToolbar extends CustomElement {
          */
         api.trigger('callButtonClicked', {
             connection: _converse.connection,
-            model: this.model
+            model: this.chatview.model
         });
     }
 }

@@ -13,7 +13,6 @@ import tpl_chatbox from "templates/chatbox.js";
 import tpl_chatbox_head from "templates/chatbox_head.js";
 import tpl_chatbox_message_form from "templates/chatbox_message_form.js";
 import tpl_spinner from "templates/spinner.html";
-import tpl_toolbar from "templates/toolbar.js";
 import tpl_user_details_modal from "templates/user_details_modal.js";
 import { BootstrapModal } from "./converse-modal.js";
 import { View } from '@converse/skeletor/src/view.js';
@@ -173,18 +172,14 @@ converse.plugins.add('converse-chatview', {
             events: {
                 'click .chatbox-navback': 'showControlBox',
                 'click .chatbox-title': 'minimize',
-                'click .new-msgs-indicator': 'viewUnreadMessages',
                 'click .send-button': 'onFormSubmitted',
                 'click .toggle-clear': 'clearMessages',
-                'input .chat-textarea': 'inputChanged',
-                'keydown .chat-textarea': 'onKeyDown',
-                'keyup .chat-textarea': 'onKeyUp',
-                'paste .chat-textarea': 'onPaste',
             },
 
             async initialize () {
                 this.initDebounced();
-
+                this.listenTo(this.model, 'change:composing_spoiler', this.renderMessageForm);
+                this.listenTo(this.model, 'change:show_new_msgs_indicator', this.renderMessageForm);
                 this.listenTo(this.model, 'change:status', this.onStatusMessageChanged);
                 this.listenTo(this.model, 'destroy', this.remove);
                 this.listenTo(this.model, 'show', this.show);
@@ -239,21 +234,15 @@ converse.plugins.add('converse-chatview', {
             },
 
             render () {
-                const result = tpl_chatbox(
-                    Object.assign(
-                        this.model.toJSON(), {
-                            'markScrolled': () => this.markScrolled()
-                        }
-                    )
-                );
-                render(result, this.el);
+                const props = Object.assign(this.model.toJSON(), {markScrolled: () => this.markScrolled()});
+                render(tpl_chatbox(props), this.el);
                 this.content = this.el.querySelector('.chat-content');
                 this.notifications = this.el.querySelector('.chat-content__notifications');
                 this.msgs_container = this.el.querySelector('.chat-content__messages');
                 this.help_container = this.el.querySelector('.chat-content__help');
                 this.renderChatContent();
-                this.renderMessageForm();
                 this.renderHeading();
+                this.renderMessageForm();
                 return this;
             },
 
@@ -266,9 +255,9 @@ converse.plugins.add('converse-chatview', {
                         // gets scrolled down. We always want to scroll down
                         // when the user writes a message as opposed to when a
                         // message is received.
-                        this.model.set('scrolled', false);
+                        this.model.set({'scrolled': false, 'show_new_msgs_indicator': false});
                     } else if (this.model.get('scrolled', true)) {
-                        this.showNewMessagesIndicator();
+                        this.model.set('show_new_msgs_indicator', true);
                     }
                 }
             },
@@ -326,43 +315,18 @@ converse.plugins.add('converse-chatview', {
                 );
             },
 
-            renderToolbar () {
-                if (!api.settings.get('show_toolbar')) {
-                    return this;
-                }
-                const options = Object.assign({
-                        'model': this.model,
-                        'chatview': this
-                    },
-                    this.model.toJSON(),
-                    this.getToolbarOptions()
-                );
-                render(tpl_toolbar(options), this.el.querySelector('.chat-toolbar'));
-                /**
-                 * Triggered once the _converse.ChatBoxView's toolbar has been rendered
-                 * @event _converse#renderToolbar
-                 * @type { _converse.ChatBoxView }
-                 * @example _converse.api.listen.on('renderToolbar', view => { ... });
-                 */
-                api.trigger('renderToolbar', this);
-                return this;
-            },
-
             renderMessageForm () {
                 const form_container = this.el.querySelector('.message-form-container');
                 render(tpl_chatbox_message_form(
                     Object.assign(this.model.toJSON(), {
+                        'chatview': this,
                         'hint_value': this.el.querySelector('.spoiler-hint')?.value,
-                        'label_message': this.model.get('composing_spoiler') ? __('Hidden message') : __('Message'),
-                        'label_spoiler_hint': __('Optional hint'),
+                        'keydown': ev => this.onKeyDown(ev),
                         'message_value': this.el.querySelector('.chat-textarea')?.value,
-                        'show_send_button': api.settings.get('show_send_button'),
-                        'show_toolbar': api.settings.get('show_toolbar'),
-                        'unread_msgs': __('You have unread messages')
                     })), form_container);
                 this.el.addEventListener('focusin', ev => this.emitFocused(ev));
                 this.el.addEventListener('focusout', ev => this.emitBlurred(ev));
-                this.renderToolbar();
+                this.focus();
             },
 
             showControlBox () {
@@ -378,20 +342,6 @@ converse.plugins.add('converse-chatview', {
                     this.user_details_modal = new _converse.UserDetailsModal({model: this.model});
                 }
                 this.user_details_modal.show(ev);
-            },
-
-            onDragOver (evt) {
-                evt.preventDefault();
-            },
-
-            onDrop (evt) {
-                if (evt.dataTransfer.files.length == 0) {
-                    // There are no files to be dropped, so this isn’t a file
-                    // transfer operation.
-                    return;
-                }
-                evt.preventDefault();
-                this.model.sendFiles(evt.dataTransfer.files);
             },
 
             async renderHeading () {
@@ -469,11 +419,6 @@ converse.plugins.add('converse-chatview', {
                 return _converse.api.hook('getHeadingButtons', this, buttons);
             },
 
-            getToolbarOptions () {
-                //  FIXME: can this be removed?
-                return {};
-            },
-
             async updateAfterMessagesFetched () {
                 await this.model.messages.fetched;
                 this.renderChatContent();
@@ -499,9 +444,10 @@ converse.plugins.add('converse-chatview', {
                 ev?.preventDefault?.();
                 ev?.stopPropagation?.();
                 if (this.model.get('scrolled')) {
-                    u.safeSave(this.model, {
+                    this.model.save({
                         'scrolled': false,
                         'top_visible_message': null,
+                        'show_new_msgs_indicator': false
                     });
                 }
                 if (this.msgs_container.scrollTo) {
@@ -708,102 +654,8 @@ converse.plugins.add('converse-chatview', {
                 }
             },
 
-            onPaste (ev) {
-                if (ev.clipboardData.files.length !== 0) {
-                    ev.preventDefault();
-                    // Workaround for quirk in at least Firefox 60.7 ESR:
-                    // It seems that pasted files disappear from the event payload after
-                    // the event has finished, which apparently happens during async
-                    // processing in sendFiles(). So we copy the array here.
-                    this.model.sendFiles(Array.from(ev.clipboardData.files));
-                    return;
-                }
-                this.updateCharCounter(ev.clipboardData.getData('text/plain'));
-            },
-
-            autocompleteInPicker (input, value) {
-                const emoji_dropdown = this.el.querySelector('converse-emoji-dropdown');
-                const emoji_picker = this.el.querySelector('converse-emoji-picker');
-                if (emoji_picker && emoji_dropdown) {
-                    this.autocompleting = value;
-                    this.ac_position = input.selectionStart;
-                    emoji_picker.model.set({'query': value});
-                    emoji_dropdown.firstElementChild.click();
-                    return true;
-                }
-            },
-
-            onEmojiReceivedFromPicker (emoji) {
-                this.insertIntoTextArea(emoji, !!this.autocompleting, false, this.ac_position);
-                this.autocompleting = false;
-                this.ac_position = null;
-            },
-
-            /**
-             * Event handler for when a depressed key goes up
-             * @private
-             * @method _converse.ChatBoxView#onKeyUp
-             */
-            onKeyUp (ev) {
-                this.updateCharCounter(ev.target.value);
-            },
-
-            /**
-             * Event handler for when a key is pressed down in a chat box textarea.
-             * @private
-             * @method _converse.ChatBoxView#onKeyDown
-             * @param { Event } ev
-             */
-            onKeyDown (ev) {
-                if (ev.ctrlKey) {
-                    // When ctrl is pressed, no chars are entered into the textarea.
-                    return;
-                }
-                if (!ev.shiftKey && !ev.altKey && !ev.metaKey) {
-                    if (ev.keyCode === converse.keycodes.TAB) {
-                        const value = u.getCurrentWord(ev.target, null, /(:.*?:)/g);
-                        if (value.startsWith(':') && this.autocompleteInPicker(ev.target, value)) {
-                            ev.preventDefault();
-                            ev.stopPropagation();
-                        }
-                    } else if (ev.keyCode === converse.keycodes.FORWARD_SLASH) {
-                        // Forward slash is used to run commands. Nothing to do here.
-                        return;
-                    } else if (ev.keyCode === converse.keycodes.ESCAPE) {
-                        return this.onEscapePressed(ev);
-                    } else if (ev.keyCode === converse.keycodes.ENTER) {
-                        return this.onEnterPressed(ev);
-                    } else if (ev.keyCode === converse.keycodes.UP_ARROW && !ev.target.selectionEnd) {
-                        const textarea = this.el.querySelector('.chat-textarea');
-                        if (!textarea.value || u.hasClass('correcting', textarea)) {
-                            return this.editEarlierMessage();
-                        }
-                    } else if (ev.keyCode === converse.keycodes.DOWN_ARROW &&
-                            ev.target.selectionEnd === ev.target.value.length &&
-                            u.hasClass('correcting', this.el.querySelector('.chat-textarea'))) {
-                        return this.editLaterMessage();
-                    }
-                }
-                if ([converse.keycodes.SHIFT,
-                        converse.keycodes.META,
-                        converse.keycodes.META_RIGHT,
-                        converse.keycodes.ESCAPE,
-                        converse.keycodes.ALT].includes(ev.keyCode)) {
-                    return;
-                }
-                if (this.model.get('chat_state') !== _converse.COMPOSING) {
-                    // Set chat state to composing if keyCode is not a forward-slash
-                    // (which would imply an internal command and not a message).
-                    this.model.setChatState(_converse.COMPOSING);
-                }
-            },
-
             getOwnMessages () {
                 return this.model.messages.filter({'sender': 'me'});
-            },
-
-            onEnterPressed (ev) {
-                return this.onFormSubmitted(ev);
             },
 
             onEscapePressed (ev) {
@@ -894,14 +746,6 @@ converse.plugins.add('converse-chatview', {
                 if (message) {
                     this.insertIntoTextArea(u.prefixMentions(message), true, true);
                     message.save('correcting', true);
-                }
-            },
-
-            inputChanged (ev) {
-                const height = ev.target.scrollHeight + 'px';
-                if (ev.target.style.height != height) {
-                    ev.target.style.height = 'auto';
-                    ev.target.style.height = height;
                 }
             },
 
@@ -1069,17 +913,6 @@ converse.plugins.add('converse-chatview', {
                 }
             },
 
-            showNewMessagesIndicator () {
-                u.showElement(this.el.querySelector('.new-msgs-indicator'));
-            },
-
-            hideNewMessagesIndicator () {
-                const new_msgs_indicator = this.el.querySelector('.new-msgs-indicator');
-                if (new_msgs_indicator !== null) {
-                    new_msgs_indicator.classList.add('hidden');
-                }
-            },
-
             /**
              * Called when the chat content is scrolled up or down.
              * We want to record when the user has scrolled away from
@@ -1091,28 +924,26 @@ converse.plugins.add('converse-chatview', {
              * @private
              */
             _markScrolled: function () {
-                let scrolled = true;
                 const is_at_bottom =
                     (this.msgs_container.scrollTop + this.msgs_container.clientHeight) >=
                         this.msgs_container.scrollHeight - 62; // sigh...
 
                 if (is_at_bottom) {
-                    scrolled = false;
+                    u.safeSave(this.model, {
+                        'scrolled': false,
+                        'top_visible_message': null,
+                        'show_new_msgs_indicator': false
+                    });
                     this.onScrolledDown();
+                } else {
+                    u.safeSave(this.model, {
+                        'scrolled': true,
+                        'top_visible_message': null
+                    });
                 }
-                u.safeSave(this.model, {
-                    'scrolled': scrolled,
-                    'top_visible_message': null
-                });
-            },
-
-            viewUnreadMessages () {
-                this.model.save({'scrolled': false, 'top_visible_message': null});
-                this.scrollDown();
             },
 
             onScrolledDown () {
-                this.hideNewMessagesIndicator();
                 if (_converse.windowState !== 'hidden') {
                     this.model.clearUnreadMsgCounter();
                 }

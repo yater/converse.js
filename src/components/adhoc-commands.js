@@ -70,6 +70,7 @@ const tpl_adhoc = (o) => html`
                 ${i18n_choose_service}
                 <p class="form-help">${i18n_choose_service_instructions}</p>
                 <converse-autocomplete
+                    ?auto_evaluate=${true}
                     .getAutoCompleteList="${getAutoCompleteList}"
                     placeholder="${i18n_jid_placeholder}"
                     name="jid"/>

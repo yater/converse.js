@@ -1561,7 +1561,7 @@ describe("Chatboxes", function () {
             const view = _converse.chatboxviews.get(sender_jid);
             await u.waitUntil(() => view.model.messages.length);
             expect(select_msgs_indicator().textContent).toBe('1');
-            view.viewUnreadMessages();
+            view.scrollDown();
             _converse.rosterview.render();
             expect(select_msgs_indicator()).toBeUndefined();
             done();

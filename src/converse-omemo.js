@@ -323,7 +323,7 @@ function toggleOMEMO (ev) {
 
 
 function getOMEMOToolbarButton (toolbar_el, buttons) {
-    const model = toolbar_el.model;
+    const model = toolbar_el.chatview.model;
     const is_muc = model.get('type') === _converse.CHATROOMS_TYPE;
     let title;
     if (is_muc && model.get('omemo_supported')) {

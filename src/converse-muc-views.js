@@ -438,17 +438,10 @@ converse.plugins.add('converse-muc-views', {
                 'click .chatbox-navback': 'showControlBox',
                 'click .chatbox-title': 'minimize',
                 'click .hide-occupants': 'hideOccupants',
-                'click .new-msgs-indicator': 'viewUnreadMessages',
                 // Arrow functions don't work here because you can't bind a different `this` param to them.
                 'click .occupant-nick': function (ev) {this.insertIntoTextArea(ev.target.textContent) },
                 'click .send-button': 'onFormSubmitted',
-                'dragover .chat-textarea': 'onDragOver',
-                'drop .chat-textarea': 'onDrop',
-                'input .chat-textarea': 'inputChanged',
-                'keydown .chat-textarea': 'onKeyDown',
-                'keyup .chat-textarea': 'onKeyUp',
                 'mousedown .dragresize-occupants-left': 'onStartResizeOccupants',
-                'paste .chat-textarea': 'onPaste',
                 'submit .muc-nickname-form': 'submitNickname',
             },
 
@@ -457,7 +450,7 @@ converse.plugins.add('converse-muc-views', {
 
                 this.listenTo(this.model, 'change', debounce(() => this.renderHeading(), 250));
                 this.listenTo(this.model, 'change:composing_spoiler', this.renderMessageForm);
-                this.listenTo(this.model, 'change:hidden_occupants', this.renderToolbar);
+                this.listenTo(this.model, 'change:hidden_occupants', this.renderMessageForm);
                 this.listenTo(this.model, 'configurationNeeded', this.getAndRenderConfigurationForm);
                 this.listenTo(this.model, 'destroy', this.hide);
                 this.listenTo(this.model, 'show', this.show);
@@ -635,7 +628,6 @@ converse.plugins.add('converse-muc-views', {
                 render(tpl, this.el.querySelector('.chat-head-chatroom'));
             },
 
-
             renderBottomPanel () {
                 const container = this.el.querySelector('.bottom-panel');
                 const entered = this.model.session.get('connection_status') === converse.ROOMSTATUS.ENTERED;
@@ -643,7 +635,6 @@ converse.plugins.add('converse-muc-views', {
                 container.innerHTML = tpl_chatroom_bottom_panel({__, can_edit, entered});
                 if (entered && can_edit) {
                     this.renderMessageForm();
-                    this.initMentionAutoComplete();
                 }
             },
 
@@ -765,23 +756,6 @@ converse.plugins.add('converse-muc-views', {
                 return element;
             },
 
-            initMentionAutoComplete () {
-                this.mention_auto_complete = new _converse.AutoComplete(this.el, {
-                    'auto_first': true,
-                    'auto_evaluate': false,
-                    'min_chars': api.settings.get('muc_mention_autocomplete_min_chars'),
-                    'match_current_word': true,
-                    'list': () => this.getAutoCompleteList(),
-                    'filter': api.settings.get('muc_mention_autocomplete_filter') == 'contains' ?
-                        _converse.FILTER_CONTAINS :
-                        _converse.FILTER_STARTSWITH,
-                    'ac_triggers': ["Tab", "@"],
-                    'include_triggers': [],
-                    'item': this.getAutoCompleteListItem
-                });
-                this.mention_auto_complete.on('suggestion-box-selectcomplete', () => (this.auto_completing = false));
-            },
-
             /**
              * Get the nickname value from the form and then join the groupchat with it.
              * @private
@@ -792,18 +766,6 @@ converse.plugins.add('converse-muc-views', {
                 ev.preventDefault();
                 const nick = ev.target.nick.value.trim();
                 nick && this.model.join(nick);
-            },
-
-            onKeyDown (ev) {
-                if (this.mention_auto_complete.onKeyDown(ev)) {
-                    return;
-                }
-                return _converse.ChatBoxView.prototype.onKeyDown.call(this, ev);
-            },
-
-            onKeyUp (ev) {
-                this.mention_auto_complete.evaluate(ev);
-                return _converse.ChatBoxView.prototype.onKeyUp.call(this, ev);
             },
 
             async onMessageRetractButtonClicked (message) {
@@ -1072,16 +1034,6 @@ converse.plugins.add('converse-muc-views', {
                 } else if (conn_status === converse.ROOMSTATUS.DESTROYED) {
                     this.showDestroyedMessage();
                 }
-            },
-
-            getToolbarOptions () {
-                return Object.assign(
-                    _converse.ChatBoxView.prototype.getToolbarOptions.apply(this, arguments), {
-                        'is_groupchat': true,
-                        'label_hide_occupants': __('Hide the list of participants'),
-                        'show_occupants_toggle': _converse.visible_toolbar_buttons.toggle_occupants
-                    }
-                );
             },
 
             /**
