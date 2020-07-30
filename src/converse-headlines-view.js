@@ -135,7 +135,6 @@ converse.plugins.add('converse-headlines-view', {
                 this.listenTo(this.model.messages, 'add', this.renderChatHistory);
                 this.listenTo(this.model, 'show', this.show);
                 this.listenTo(this.model, 'destroy', this.hide);
-                this.listenTo(this.model, 'change:minimized', this.onMinimizedChanged);
 
                 this.render();
                 this.renderHeading();

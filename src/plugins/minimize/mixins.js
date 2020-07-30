@@ -92,14 +92,6 @@ export const minimizableChatBoxView = {
         if (ev && ev.preventDefault) { ev.preventDefault(); }
         this.model.minimize();
         return this;
-    },
-
-    onMinimizedChanged (item) {
-        if (item.get('minimized')) {
-            this.onMinimized();
-        } else {
-            this.onMaximized();
-        }
     }
 }
 

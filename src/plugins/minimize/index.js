@@ -5,12 +5,11 @@
  */
 import "converse-chatview";
 import { MinimizedChats } from './views.js';
+import { Model } from '@converse/skeletor/src/model.js';
 import { __ } from '@converse/headless/i18n';
 import { _converse, api, converse } from "@converse/headless/converse-core";
 import { chatTrimmer, minimizableChatBox, minimizableChatBoxView } from './mixins.js';
 import { debounce } from 'lodash-es';
-
-const { dayjs } = converse.env;
 
 
 function initMinimizedChats () {
@@ -22,6 +21,15 @@ function initMinimizedChats () {
      * @example _converse.api.listen.on('minimizedChatsInitialized', () => { ... });
      */
     api.trigger('minimizedChatsInitialized');
+}
+
+async function initChatBox (chatbox) {
+    chatbox.on('show', chatbox.maximize, chatbox);
+    const id = `minchats-session-${chatbox.get('jid')}`;
+    const storage_type = api.settings.get('global_minimized_toggle_state') ? 'local' : 'session';
+    chatbox.minimized_session = new Model();
+    chatbox.minimized_session.browserStorage = _converse.createStore(id, storage_type);
+    await chatbox.minimized_session.fetch();
 }
 
 function addMinimizeButtonToChat (view, buttons) {
@@ -76,8 +84,8 @@ converse.plugins.add('converse-minimize', {
         "converse-dragresize"
     ],
 
-    enabled (_converse) {
-        return _converse.api.settings.get("view_mode") === 'overlayed';
+    enabled () {
+        return api.settings.get("view_mode") === 'overlayed';
     },
 
     overrides: {
@@ -88,21 +96,12 @@ converse.plugins.add('converse-minimize', {
         // New functions which don't exist yet can also be added.
 
         ChatBox: {
-            initialize () {
-                this.__super__.initialize.apply(this, arguments);
-                this.on('show', this.maximize, this);
-
-                if (this.get('id') === 'controlbox') {
-                    return;
-                }
-                this.save({
-                    'minimized': this.get('minimized') || false,
-                    'time_minimized': this.get('time_minimized') || dayjs(),
-                });
+            isMinimized () {
+                return this.minimized_session?.get('minimized');
             },
 
             maybeShow (force) {
-                if (!force && this.get('minimized')) {
+                if (!force && this.isMinimized()) {
                     // Must return the chatbox
                     return this;
                 }
@@ -112,8 +111,7 @@ converse.plugins.add('converse-minimize', {
 
         ChatBoxView: {
             show () {
-                const { _converse } = this.__super__;
-                if (_converse.api.settings.get("view_mode") === 'overlayed' && this.model.get('minimized')) {
+                if (api.settings.get("view_mode") === 'overlayed' && this.model.isMinimized()) {
                     this.model.minimize();
                     return this;
                 } else {
@@ -122,23 +120,21 @@ converse.plugins.add('converse-minimize', {
             },
 
             isNewMessageHidden () {
-                return this.model.get('minimized') ||
-                    this.__super__.isNewMessageHidden.apply(this, arguments);
+                return this.model.isMinimized() || this.__super__.isNewMessageHidden.apply(this, arguments);
             },
 
             shouldShowOnTextMessage () {
-                return !this.model.get('minimized') &&
-                    this.__super__.shouldShowOnTextMessage.apply(this, arguments);
+                return !this.model.isMinimized() && this.__super__.shouldShowOnTextMessage.apply(this, arguments);
             },
 
             setChatBoxHeight (height) {
-                if (!this.model.get('minimized')) {
+                if (!this.model.isMinimized()) {
                     return this.__super__.setChatBoxHeight.call(this, height);
                 }
             },
 
             setChatBoxWidth (width) {
-                if (!this.model.get('minimized')) {
+                if (!this.model.isMinimized()) {
                     return this.__super__.setChatBoxWidth.call(this, width);
                 }
             }
@@ -151,7 +147,10 @@ converse.plugins.add('converse-minimize', {
          * loaded by Converse.js's plugin machinery.
          */
 
-        api.settings.extend({'no_trimming': false});
+        api.settings.extend({
+            'no_trimming': false,
+            'global_minimized_toggle_state': true
+        });
         api.promises.add('minimizedChatsInitialized');
 
         Object.assign(_converse.ChatBox.prototype, minimizableChatBox);
@@ -162,12 +161,21 @@ converse.plugins.add('converse-minimize', {
         api.listen.on('chatBoxInsertedIntoDOM', view => _converse.chatboxviews.trimChats(view));
         api.listen.on('connected', () => initMinimizedChats());
         api.listen.on('controlBoxOpened', view => _converse.chatboxviews.trimChats(view));
-        api.listen.on('chatBoxViewInitialized', v => v.listenTo(v.model, 'change:minimized', v.onMinimizedChanged));
 
-        api.listen.on('chatRoomViewInitialized', view => {
-            view.listenTo(view.model, 'change:minimized', view.onMinimizedChanged)
-            view.model.get('minimized') && view.hide();
-        });
+        api.listen.on('chatBoxInitialized', c => initChatBox(c));
+        api.listen.on('chatRoomInitialized', c => initChatBox(c));
+        api.listen.on('headlinesBoxInitialized', c => initChatBox(c));
+
+        api.listen.on('chatBoxViewInitialized',
+            v => v.listenTo(v.model.minimized_session, 'change:minimized', v.onMinimizedChanged));
+        api.listen.on('headlinesBoxInitialized',
+            v => v.listenTo(v.model.minimized_session, 'change:minimized', v.onMinimizedChanged));
+        api.listen.on('chatRoomViewInitialized',
+            v => {
+                v.listenTo(v.model.minimized_session, 'change:minimized', v.onMinimizedChanged)
+                v.model.isMinimized() && v.hide();
+            }
+        );
 
         api.listen.on('getHeadingButtons', (view, buttons) => {
             if (view.model.get('type') === _converse.CHATROOMS_TYPE) {
