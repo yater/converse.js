@@ -1,4 +1,4 @@
-import tpl_chats_panel from "./templates/chats_panel.html";
+import tpl_chats_panel from "./templates/chats_panel.js";
 import tpl_toggle_chats from "./templates/toggle_chats.js";
 import tpl_trimmed_chat from "./templates/trimmed_chat.js";
 import { Model } from '@converse/skeletor/src/model.js';
@@ -93,7 +93,7 @@ export const MinimizedChats = _converse.MinimizedChats = Overview.extend({
 
     render () {
         if (!this.el.parentElement) {
-            this.el.innerHTML = tpl_chats_panel();
+            render(tpl_chats_panel(), this.el);
             _converse.chatboxviews.insertRowColumn(this.el);
         }
         if (this.keys().length === 0) {
