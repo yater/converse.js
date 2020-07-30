@@ -53,7 +53,7 @@ module.exports = function(config) {
       { pattern: "spec/modtools.js", type: 'module' },
       { pattern: "spec/room_registration.js", type: 'module' },
       { pattern: "spec/autocomplete.js", type: 'module' },
-      { pattern: "spec/minchats.js", type: 'module' },
+      { pattern: "src/plugins/minimize/test.js", type: 'module' },
       { pattern: "spec/notification.js", type: 'module' },
       { pattern: "spec/login.js", type: 'module' },
       { pattern: "spec/register.js", type: 'module' },

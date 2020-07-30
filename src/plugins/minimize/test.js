@@ -1,8 +1,9 @@
-/*global mock */
+/*global mock, converse */
 
 const _ = converse.env._;
 const  $msg = converse.env.$msg;
 const u = converse.env.utils;
+
 
 describe("The Minimized Chats Widget", function () {
 
