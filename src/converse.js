@@ -10,27 +10,27 @@
  */
 import "@converse/headless/headless";
 import "i18n";
-import "converse-registry";
+import "./components/chats.js";
 import "converse-autocomplete";
 import "converse-bookmark-views";  // Views for XEP-0048 Bookmarks
 import "converse-chatview";        // Renders standalone chat boxes for single user chat
 import "converse-controlbox";      // The control box
 import "converse-dragresize";      // Allows chat boxes to be resized by dragging them
 import "converse-fullscreen";
+import "converse-headlines-view";
 import "converse-mam-views";
 import "converse-minimize";        // Allows chat boxes to be minimized
 import "converse-muc-views";       // Views related to MUC
-import "converse-headlines-view";
 import "converse-notification";    // HTML5 Notifications
 import "converse-omemo";
 import "converse-profile";
 import "converse-push";            // XEP-0357 Push Notifications
 import "converse-register";        // XEP-0077 In-band registration
+import "converse-registry";
 import "converse-roomslist";       // Show currently open chat rooms
 import "converse-rosterview";
 import "converse-singleton";
 import "converse-uniview";
-import "./components/converse.js";
 /* END: Removable components */
 
 import "../sass/converse.scss";
