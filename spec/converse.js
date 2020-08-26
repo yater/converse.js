@@ -2,8 +2,27 @@
 
 describe("Converse", function() {
 
-    describe("Settings", function () {
+    it("Can be initialized via a custom element", (done) => {
 
+        converse.plugins.add('test', {
+            initialize () {
+                const { _converse } = this;
+                expect(_converse.api.settings.get('i18n')).toBe('af');
+                expect(_converse.api.settings.get('animate')).toBe(false);
+                done();
+            }
+        });
+
+        window.addEventListener('converse-initialize', (ev) => {
+            ev.element.settings = {
+                'whitelisted_plugins': ['test'],
+                'animate': false,
+                'bosh_service_url': 'montague.lit/http-bind',
+                'i18n': 'af'
+            };
+        });
+        const el = document.createElement('converse-init');
+        document.body.appendChild(el);
     });
 
     describe("Authentication", function () {
