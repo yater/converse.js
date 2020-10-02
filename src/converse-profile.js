@@ -192,9 +192,9 @@ converse.plugins.add('converse-profile', {
                 const chat_status = this.model.get('status') || 'offline';
                 return tpl_profile(Object.assign(
                     this.model.toJSON(),
-                    this.model.vcard.toJSON(), {
+                    this.model.vcard?.toJSON() ?? {}, {
                     chat_status,
-                    'fullname': this.model.vcard.get('fullname') || _converse.bare_jid,
+                    'fullname': this.model.vcard?.get('fullname') || _converse.bare_jid,
                     "showUserSettingsModal": ev => this.showUserSettingsModal(ev),
                     'status_message': this.model.get('status_message') ||
                                         __("I am %1$s", this.getPrettyStatus(chat_status)),
