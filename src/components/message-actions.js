@@ -1,8 +1,10 @@
 import { CustomElement } from './element.js';
 import { __ } from '../i18n';
-import { api } from "@converse/headless/converse-core";
+import { api, converse } from "@converse/headless/converse-core";
 import { html } from 'lit-element';
 import { until } from 'lit-html/directives/until.js';
+
+const { Strophe } = converse.env;
 
 
 class MessageActions extends CustomElement {
@@ -44,6 +46,18 @@ class MessageActions extends CustomElement {
         this.chatview.onMessageRetractButtonClicked(this.model);
     }
 
+    async onBanButtonClicked (ev) {
+        ev.preventDefault();
+        const jid = this.model.occupant?.get('jid') || this.model.get('from');
+        const name = this.model.occupant?.getDisplayName() || Strophe.getResourceFromJid(jid);
+        const message = __(`Are you sure you want to ban ${name}?`);
+        const reason = await api.prompt(__('Ban User'), message,  __('Optional reason for the ban'));
+        const muc_jid = this.model.get('from_muc');
+        const room = await api.rooms.get(muc_jid);
+        await room.sendAffiliationIQ('outcast', { jid, reason });
+        this.requestUpdate();
+    }
+
     async renderActions () {
         const buttons = [];
         if (this.editable) {
@@ -55,7 +69,8 @@ class MessageActions extends CustomElement {
                 'name': 'edit'
             });
         }
-        const may_be_moderated = this.model.get('type') === 'groupchat' && await this.model.mayBeModerated();
+        const is_groupchat = this.model.get('type') === 'groupchat';
+        const may_be_moderated = is_groupchat && await this.model.mayBeModerated();
         const retractable = !this.is_retracted && (this.model.mayBeRetracted() || may_be_moderated);
         if (retractable) {
             buttons.push({
@@ -66,6 +81,21 @@ class MessageActions extends CustomElement {
                 'name': 'retract'
             });
         }
+
+        if (is_groupchat &&
+            this.chatview.model.canModerateMessages() &&
+            this.model.get('sender') !== 'me' &&
+            this.model.occupant?.get('affiliation') !== 'outcast'
+        ) {
+            buttons.push({
+                'i18n_text': __('Ban User'),
+                'handler': ev => this.onBanButtonClicked(ev),
+                'button_class': 'chat-msg__action-ban',
+                'icon_class': 'fas fa-ban',
+                'name': 'ban'
+            });
+        }
+
         const items = buttons.map(b => MessageActions.getActionsDropdownItem(b));
         if (items.length) {
             return html`<converse-dropdown class="chat-msg__actions" .items=${ items }></converse-dropdown>`;

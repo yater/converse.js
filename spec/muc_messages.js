@@ -1,6 +1,6 @@
 /*global mock, converse */
 
-const { Promise, Strophe, $msg, $pres, sizzle, stanza_utils } = converse.env;
+const { Promise, Strophe, $msg, $iq, $pres, sizzle, stanza_utils } = converse.env;
 const u = converse.env.utils;
 const original_timeout = jasmine.DEFAULT_TIMEOUT_INTERVAL;
 
@@ -8,6 +8,93 @@ describe("A Groupchat Message", function () {
 
     beforeEach(() => (jasmine.DEFAULT_TIMEOUT_INTERVAL = 7000));
     afterEach(() => (jasmine.DEFAULT_TIMEOUT_INTERVAL = original_timeout));
+
+    describe("Actions dropdown", function () {
+
+        it("allows moderators to ban a user",
+            mock.initConverse(
+                ['rosterGroupsFetched'], {},
+                    async function (done, _converse) {
+
+            const muc_jid = 'lounge@montague.lit';
+            await mock.openAndEnterChatRoom(_converse, muc_jid, 'romeo');
+            let presence = $pres({
+                    'from': `${muc_jid}/annoyingGuy`,
+                    'id':'27C55F89-1C6A-459A-9EB5-77690145D624',
+                    'to': 'romeo@montague.lit/desktop'
+                })
+                .c('x', { 'xmlns': 'http://jabber.org/protocol/muc#user'})
+                    .c('item', {
+                        'jid': 'annoyingguy@montague.lit',
+                        'affiliation': 'member',
+                        'role': 'participant'
+                    });
+            _converse.connection._dataRecv(mock.createRequest(presence));
+
+            const received_stanza = u.toStanza(`
+                <message to='${_converse.jid}' from='${muc_jid}/annoyingGuy' type='groupchat' id='${_converse.connection.getUniqueId()}'>
+                    <body>Yet I should kill thee with much cherishing.</body>
+                </message>
+            `);
+            _converse.connection._dataRecv(mock.createRequest(received_stanza));
+
+            const view = _converse.api.chatviews.get(muc_jid);
+            await u.waitUntil(() => view.el.querySelectorAll('.chat-msg__body.chat-msg__body--received').length, 500);
+
+            const ban_button = await u.waitUntil(() => view.el.querySelector('.chat-msg__content .chat-msg__action-ban'));
+            ban_button.click();
+            await u.waitUntil(() => u.isVisible(document.querySelector('#converse-modals .modal')));
+            const reason = document.querySelector('#converse-modals .modal input[name="reason')
+            reason.value = "You're annoying";
+            const submit_button = document.querySelector('#converse-modals .modal button[type="submit"]');
+            submit_button.click();
+
+            const sent_IQs = _converse.connection.IQ_stanzas;
+            const sent_IQ = await u.waitUntil(() => sent_IQs.filter(iq => iq.querySelector(`iq[type="set"] query[xmlns="${Strophe.NS.MUC}#admin"]`)).pop());
+
+            expect(Strophe.serialize(sent_IQ)).toBe(
+                `<iq id="${sent_IQ.getAttribute('id')}" to="${muc_jid}" type="set" xmlns="jabber:client">`+
+                    `<query xmlns="http://jabber.org/protocol/muc#admin">`+
+                        `<item affiliation="outcast" jid="annoyingguy@montague.lit">`+
+                            `<reason>You&apos;re annoying</reason>`+
+                        `</item>`+
+                    `</query>`+
+                `</iq>`);
+
+            const result = $iq({
+                "xmlns": "jabber:client",
+                "type": "result",
+                "to": _converse.jid,
+                "from": muc_jid,
+                "id": sent_IQ.getAttribute('id')
+            });
+            _converse.connection._dataRecv(mock.createRequest(result));
+
+            presence = $pres({
+                'from': `${muc_jid}/annoyingGuy`,
+                'id':'27C55F89-1C6A-459A-9EB5-77690145D628',
+                'to': _converse.jid
+            }).c('x', { 'xmlns': 'http://jabber.org/protocol/muc#user'})
+                .c('item', {
+                    'jid': 'annoyingguy@montague.lit',
+                    'affiliation': 'outcast',
+                    'role': 'participant'
+                }).c('actor', {'nick': 'romeo'}).up()
+                    .c('reason').t("You're annoying").up().up()
+                .c('status', {'code': '301'});
+
+            _converse.connection._dataRecv(mock.createRequest(presence));
+
+            await u.waitUntil(() => view.el.querySelectorAll('.chat-info').length === 1);
+            expect(view.el.querySelector('.chat-info__message').textContent.trim()).toBe("annoyingGuy has been banned by romeo");
+            expect(view.el.querySelector('.chat-info q').textContent.trim()).toBe("You're annoying");
+
+            // Can't ban the user again
+            await u.waitUntil(() => view.el.querySelector('.chat-msg__content .chat-msg__action-ban') === null);
+            done();
+        }));
+    });
+
 
     describe("which is succeeded by an error message", function () {
 

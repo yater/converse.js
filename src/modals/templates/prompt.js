@@ -4,14 +4,12 @@ import { __ } from '../../i18n';
 
 const tpl_field = (f) => html`
     <div class="form-group">
-        <label>
-            ${f.label || ''}
-            <input type="text"
-                name="${f.name}"
-                class="${(f.challenge_failed) ? 'error' : ''} form-control form-control--labeled"
-                ?required="${f.required}"
-                placeholder="${f.placeholder}" />
-        </label>
+        <label>${f.label || ''}</label>
+        <input type="text"
+            name="${f.name}"
+            class="${(f.challenge_failed) ? 'error' : ''} form-control"
+            ?required="${f.required}"
+            placeholder="${f.placeholder}" />
     </div>
 `;
 
