@@ -139,6 +139,7 @@ class Suggestion extends String {
 export class AutoComplete {
 
     constructor (el, config={}) {
+        this.suggestions = [];
         this.is_opened = false;
 
         if (u.hasClass('suggestion-box', el)) {
