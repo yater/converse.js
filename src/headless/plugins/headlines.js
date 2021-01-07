@@ -3,6 +3,7 @@
  * @copyright 2020, the Converse.js contributors
  * @description XEP-0045 Multi-User Chat Views
  */
+import debounce from 'lodash/debounce';
 import { _converse, api, converse } from "@converse/headless/core";
 import { isHeadline, isServerMessage } from '@converse/headless/shared/parsers';
 import { parseMessage } from '@converse/headless/plugins/chat/parsers';
@@ -66,6 +67,7 @@ converse.plugins.add('converse-headlines', {
 
             async initialize () {
                 this.set({'box_id': `box-${this.get('jid')}`});
+                this.debouncedPruneChatHistory = debounce(message => this.pruneChatHistory(message), 1000);
                 this.initMessages();
                 await this.fetchMessages();
                 /**

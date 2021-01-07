@@ -57,6 +57,8 @@ const ChatRoomMixin = {
     async initialize () {
         this.initialized = u.getResolveablePromise();
         this.debouncedRejoin = debounce(this.rejoin, 250);
+        this.debouncedPruneChatHistory = debounce(message => this.pruneChatHistory(message), 1000);
+
         this.set('box_id', `box-${this.get('jid')}`);
         this.initNotifications();
         this.initMessages();
@@ -76,6 +78,8 @@ const ChatRoomMixin = {
         this.listenTo(this.occupants, 'change:show', this.onOccupantShowChanged);
         this.listenTo(this.occupants, 'change:affiliation', this.createAffiliationChangeMessage);
         this.listenTo(this.occupants, 'change:role', this.createRoleChangeMessage);
+
+        this.listenTo(this.messages, 'add', m => this.debouncedPruneChatHistory(m));
 
         const restored = await this.restoreFromCache();
         if (!restored) {

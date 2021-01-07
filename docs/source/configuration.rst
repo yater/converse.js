@@ -1680,6 +1680,30 @@ BrowserExtLocal represents the local storage area.
 Items in local storage are local to the machine the extension was installed on
 
 
+prune_chat_history
+------------------
+
+* Default: ``0``
+
+This option let's you specify the number of messages to be kept in the chat
+history.
+
+A value of zero means that this feature is turned off. For any positive value,
+as new messages come in, older messages that are above the threshold are
+removed.
+
+For example, if ``prune_chat_history`` is set to ``100``, the history will
+grow to a hundred as new messages come in. Once the history size has reached a
+hundred, as new messages come in, the oldest messages will be deleted to
+maintain a history size of 100.
+
+
+.. note::
+  OMEMO-encrypted messages which are removed, can NOT be recovered again and
+  will never be visible in unencrypted form again in that particular instance
+  of Converse.
+
+
 push_app_servers
 ----------------
 
@@ -2066,31 +2090,6 @@ Allows you to show or hide buttons on the chatboxes' toolbars.
 * *toggle_occupants*:
     Shows a button for toggling (i.e. showing/hiding) the list of occupants in a chatroom.
 
-.. _`websocket-url`:
-
-
-websocket_url
--------------
-
-* Default: ``undefined``
-
-Example: ``ws://xmpp.example.com:5280/ws/``
-
-Example with reverse-proxy and TLS: ``wss://xmpp.example.com/ws/``
-
-This option is used to specify a
-`websocket <https://developer.mozilla.org/en/docs/WebSockets>`_ URI to which
-Converse can connect to.
-
-Websockets provide a more modern and effective two-way communication protocol
-between the browser and a server, effectively emulating TCP at the application
-layer and therefore overcoming many of the problems with existing long-polling
-techniques for bidirectional HTTP (such as `BOSH <https://en.wikipedia.org/wiki/BOSH>`_).
-
-Please refer to your XMPP server's documentation on how to enable websocket
-support.
-
-
 .. _`view_mode`:
 
 view_mode
@@ -2150,6 +2149,32 @@ The ``view_mode`` setting configures Converse's mode and resulting behavior.
 
     Furthermore, it's no longer necessary to whitelist or blacklist any plugins
     when switching view modes.
+
+
+.. _`websocket-url`:
+
+
+websocket_url
+-------------
+
+* Default: ``undefined``
+
+Example: ``ws://xmpp.example.com:5280/ws/``
+
+Example with reverse-proxy and TLS: ``wss://xmpp.example.com/ws/``
+
+This option is used to specify a
+`websocket <https://developer.mozilla.org/en/docs/WebSockets>`_ URI to which
+Converse can connect to.
+
+Websockets provide a more modern and effective two-way communication protocol
+between the browser and a server, effectively emulating TCP at the application
+layer and therefore overcoming many of the problems with existing long-polling
+techniques for bidirectional HTTP (such as `BOSH <https://en.wikipedia.org/wiki/BOSH>`_).
+
+Please refer to your XMPP server's documentation on how to enable websocket
+support.
+
 
 
 .. _`whitelisted_plugins`:

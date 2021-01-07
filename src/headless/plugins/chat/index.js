@@ -57,6 +57,7 @@ converse.plugins.add('converse-chat', {
             'allow_message_styling': true,
             'auto_join_private_chats': [],
             'clear_messages_on_reconnection': false,
+            'prune_chat_history': 0,
             'filter_by_resource': false,
             'send_chat_state_notifications': true
         });

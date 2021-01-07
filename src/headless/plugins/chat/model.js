@@ -1,4 +1,5 @@
 import ModelWithContact from './model-with-contact.js';
+import debounce from 'lodash/debounce';
 import filesize from "filesize";
 import log from '@converse/headless/log';
 import { Model } from '@converse/skeletor/src/model.js';
@@ -38,6 +39,7 @@ const ChatBox = ModelWithContact.extend({
     async initialize () {
         this.initialized = u.getResolveablePromise();
         ModelWithContact.prototype.initialize.apply(this, arguments);
+        this.debouncedPruneChatHistory = debounce(message => this.pruneChatHistory(message), 1000);
 
         const jid = this.get('jid');
         if (!jid) {
@@ -97,6 +99,8 @@ const ChatBox = ModelWithContact.extend({
                 api.send(this.createMessageStanza(message));
             }
         });
+
+        this.listenTo(this.messages, 'add', m => this.debouncedPruneChatHistory(m));
     },
 
     initNotifications () {
@@ -127,6 +131,18 @@ const ChatBox = ModelWithContact.extend({
             'error': () => { this.afterMessagesFetched(); resolve() }
         });
         return this.messages.fetched;
+    },
+
+    pruneChatHistory (message) {
+        const message_history_size = api.settings.get('prune_chat_history');
+        if (message_history_size > 0 && this.messages.length > message_history_size && !u.isEmptyMessage(message)) {
+            const non_empty_messages = this.messages.filter(m => !u.isEmptyMessage(m));
+            if (non_empty_messages.length > message_history_size) {
+                while (non_empty_messages.length > message_history_size) {
+                    non_empty_messages.shift().destroy();
+                }
+            }
+        }
     },
 
     async handleErrorMessageStanza (stanza) {
