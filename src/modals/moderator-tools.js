@@ -4,6 +4,7 @@ import tpl_moderator_tools_modal from "./templates/moderator-tools.js";
 import { AFFILIATIONS, ROLES } from "@converse/headless/plugins/muc/index.js";
 import { __ } from '../i18n';
 import { api, converse } from "@converse/headless/core";
+import { setAffiliation, setAffiliationForDomain } from '@converse/headless/plugins/muc/utils.js';
 
 const { Strophe, sizzle } = converse.env;
 const u = converse.env.utils;
@@ -45,6 +46,7 @@ export default BootstrapModal.extend({
     toHTML () {
         const occupant = this.chatroomview.model.occupants.findWhere({'jid': _converse.bare_jid});
         return tpl_moderator_tools_modal(Object.assign(this.model.toJSON(), {
+            'muc_domain': Strophe.getDomainFromJid(this.chatroomview.model.get('jid')),
             'affiliations_filter': this.affiliations_filter,
             'assignAffiliation': ev => this.assignAffiliation(ev),
             'assignRole': ev => this.assignRole(ev),
@@ -147,7 +149,7 @@ export default BootstrapModal.extend({
         this.model.set({'affiliation': affiliation});
     },
 
-    async assignAffiliation (ev) {
+    async assignAffiliation(ev, refresh=false) {
         ev.stopPropagation();
         ev.preventDefault();
         const data = new FormData(ev.target);
@@ -156,9 +158,14 @@ export default BootstrapModal.extend({
             'jid': data.get('jid'),
             'reason': data.get('reason')
         }
-        const current_affiliation = this.model.get('affiliation');
+        const muc_jid = this.chatroomview.model.get('jid');
+        const muc_domain = Strophe.getDomainFromJid(this.chatroomview.model.get('jid'));
         try {
-            await this.chatroomview.model.setAffiliation(affiliation, [attrs]);
+            if (data.get('allmucs')) {
+                await setAffiliationForDomain(muc_domain, affiliation, [attrs]);
+            } else {
+                await setAffiliation(muc_jid, affiliation, [attrs]);
+            }
         } catch (e) {
             if (e === null) {
                 this.alert(__('Timeout error while trying to set the affiliation'), 'danger');
@@ -170,10 +177,15 @@ export default BootstrapModal.extend({
             log.error(e);
             return;
         }
-        this.alert(__('Affiliation changed'), 'primary');
-        await this.chatroomview.model.occupants.fetchMembers()
-        this.model.set({'affiliation': null}, {'silent': true});
-        this.model.set({'affiliation': current_affiliation});
+        this.alert(__('Affiliation changed to %1$s', affiliation), 'primary');
+        if (refresh) {
+            await this.chatroomview.model.occupants.fetchMembers()
+            const current_affiliation = this.model.get('affiliation');
+            if (current_affiliation) {
+                this.model.set({'affiliation': null}, {'silent': true});
+                this.model.set({'affiliation': current_affiliation});
+            }
+        }
     },
 
     assignRole (ev) {

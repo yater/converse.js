@@ -1,5 +1,5 @@
 import log from '../../log';
-import muc_utils from './utils.js';
+import { computeAffiliationsDelta, setAffiliation } from './utils.js';
 import p from '../../utils/parse-helpers';
 import sizzle from 'sizzle';
 import u from '../../utils/form';
@@ -1119,29 +1119,6 @@ const ChatRoomMixin = {
     },
 
     /**
-     * Send IQ stanzas to the server to set an affiliation for
-     * the provided JIDs.
-     * See: https://xmpp.org/extensions/xep-0045.html#modifymember
-     *
-     * Prosody doesn't accept multiple JIDs' affiliations
-     * being set in one IQ stanza, so as a workaround we send
-     * a separate stanza for each JID.
-     * Related ticket: https://issues.prosody.im/345
-     *
-     * @private
-     * @method _converse.ChatRoom#setAffiliation
-     * @param { string } affiliation - The affiliation
-     * @param { object } members - A map of jids, affiliations and
-     *      optionally reasons. Only those entries with the
-     *      same affiliation as being currently set will be considered.
-     * @returns { Promise } A promise which resolves and fails depending on the XMPP server response.
-     */
-    setAffiliation (affiliation, members) {
-        members = members.filter(m => m.affiliation === undefined || m.affiliation === affiliation);
-        return Promise.all(members.map(m => this.sendAffiliationIQ(affiliation, m)));
-    },
-
-    /**
      * Given a <field> element, return a copy with a <value> child if
      * we can find a value for it in this rooms config.
      * @private
@@ -1371,29 +1348,6 @@ const ChatRoomMixin = {
     },
 
     /**
-     * Send an IQ stanza specifying an affiliation change.
-     * @private
-     * @method _converse.ChatRoom#
-     * @param { String } affiliation: affiliation
-     *     (could also be stored on the member object).
-     * @param { Object } member: Map containing the member's jid and
-     *     optionally a reason and affiliation.
-     */
-    sendAffiliationIQ (affiliation, member) {
-        const iq = $iq({ to: this.get('jid'), type: 'set' })
-            .c('query', { xmlns: Strophe.NS.MUC_ADMIN })
-            .c('item', {
-                'affiliation': member.affiliation || affiliation,
-                'nick': member.nick,
-                'jid': member.jid
-            });
-        if (member.reason !== undefined) {
-            iq.c('reason', member.reason);
-        }
-        return api.sendIQ(iq);
-    },
-
-    /**
      * Send IQ stanzas to the server to modify affiliations for users in this groupchat.
      *
      * See: https://xmpp.org/extensions/xep-0045.html#modifymember
@@ -1407,7 +1361,7 @@ const ChatRoomMixin = {
      */
     setAffiliations (members) {
         const affiliations = [...new Set(members.map(m => m.affiliation))];
-        return Promise.all(affiliations.map(a => this.setAffiliation(a, members)));
+        return Promise.all(affiliations.map(a => setAffiliation(this.get('jid'), a, members)));
     },
 
     /**
@@ -1554,7 +1508,7 @@ const ChatRoomMixin = {
         const all_affiliations = ['member', 'admin', 'owner'];
         const aff_lists = await Promise.all(all_affiliations.map(a => this.getAffiliationList(a)));
         const old_members = aff_lists.reduce((acc, val) => (u.isErrorObject(val) ? acc : [...val, ...acc]), []);
-        await this.setAffiliations(muc_utils.computeAffiliationsDelta(true, false, members, old_members));
+        await this.setAffiliations(computeAffiliationsDelta(true, false, members, old_members));
         await this.occupants.fetchMembers();
     },
 

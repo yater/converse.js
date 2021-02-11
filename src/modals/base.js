@@ -3,7 +3,6 @@ import log from "@converse/headless/log";
 import tpl_alert_component from "templates/alert.js";
 import { View } from '@converse/skeletor/src/view.js';
 import { api, converse } from "@converse/headless/core";
-import { render } from 'lit-html';
 
 const { sizzle } = converse.env;
 const u = converse.env.utils;
@@ -67,13 +66,14 @@ const BaseModal = View.extend({
             log.error("Could not find a .modal-alert element in the modal to show an alert message in!");
             return;
         }
+        this.timeout && clearTimeout(this.timeout);
         // FIXME: Instead of adding the alert imperatively, we should
         // find a way to let the modal rerender with an alert message
-        render(tpl_alert_component({'type': `alert-${type}`, 'message': message}), body);
-        const el = body.firstElementChild;
-        setTimeout(() => {
-            u.addClass('fade-out', el);
-            setTimeout(() => u.removeElement(el), 600);
+        const tp = tpl_alert_component({'type': `alert-${type}`, 'message': message});
+        body.innerHTML = u.getElementFromTemplateResult(tp).outerHTML;
+        this.timeout = setTimeout(() => {
+            u.addClass('fade-out', body.firstElementChild);
+            setTimeout(() => (body.innerHTML = ''), 600);
         }, 5000);
     },
 

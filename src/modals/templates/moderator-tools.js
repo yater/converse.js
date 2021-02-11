@@ -86,31 +86,59 @@ const role_list_item = (o) => html`
     </li>
 `;
 
+const tpl_jid = () => {
+    const i18n_address = __('XMPP Address');
+    const i18n_example_jid = __('user@example.org');
+    return html`
+        <div class="form-group">
+            <div class="row">
+                <div class="col">
+                    <label><strong>${i18n_address}:</strong></label>
+                    <input required class="form-control" type="text" name="jid" placeholder="${i18n_example_jid}"/>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
 
 const tpl_set_affiliation_form = (o) => {
     const i18n_change_affiliation = __('Change affiliation');
     const i18n_new_affiliation = __('New affiliation');
     const i18n_reason = __('Reason');
+    const i18n_set_affiation = __('Set affiliation by XMPP address');
+    const form_classes = `affiliation-form ${o.item ? 'hidden' : ''}`;
+    const i18n_assign_all_mucs = __('Assign in all groupchats on %1$s', o.muc_domain);
     return html`
-        <form class="affiliation-form hidden" @submit=${o.assignAffiliation}>
-            <div class="form-group">
+        ${ o.item ? html`<h6 class="centered">${i18n_set_affiation}</h6>` : '' }
+        <form class="${form_classes}" @submit=${ev => o.assignAffiliation(ev, !!o.item)}>
+            ${ o.item ? html`
                 <input type="hidden" name="jid" value="${o.item.jid}"/>
                 <input type="hidden" name="nick" value="${o.item.nick}"/>
+            ` : tpl_jid() }
+            <div class="form-group">
                 <div class="row">
                     <div class="col">
                         <label><strong>${i18n_new_affiliation}:</strong></label>
                         <select class="custom-select select-affiliation" name="affiliation">
-                            ${ o.assignable_affiliations.map(aff => html`<option value="${aff}" ?selected=${aff === o.item.affiliation}>${aff}</option>`) }
+                            ${ o.assignable_affiliations.map(aff => html`<option value="${aff}" ?selected=${aff === o.item?.affiliation}>${aff}</option>`) }
                         </select>
                     </div>
                     <div class="col">
+                        <p>
                         <label><strong>${i18n_reason}:</strong></label>
                         <input class="form-control" type="text" name="reason"/>
+                        </p>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col">
+                        <label><input type="checkbox" name="allmucs"/> &nbsp; ${i18n_assign_all_mucs}</label>
                     </div>
                 </div>
             </div>
             <div class="form-group">
-                <input type="submit" class="btn btn-primary" name="change" value="${i18n_change_affiliation}"/>
+                <input type="submit" class="centered btn btn-primary" name="change" value="${i18n_change_affiliation}"/>
             </div>
         </form>
     `;
@@ -165,7 +193,13 @@ export default (o) => {
         "grants privileges and responsibilities. For example admins and owners automatically have the "+
         "moderator role."
     );
+    const i18n_helptext_query_affiliation = __(
+        "Be careful when querying in very large groupchats with thousands of affiliated users your browser "+
+        "may become unresponsive."
+    );
     const show_both_tabs = o.queryable_roles.length && o.queryable_affiliations.length;
+    const i18n_set_affiliation = __('Set affiliation for a single user');
+    const i18n_query_affiliation = __('Query for users by affiliation');
     return html`
     <div class="modal-dialog" role="document">
         <div class="modal-content">
@@ -180,8 +214,15 @@ export default (o) => {
 
                 <div class="tab-content">
                     <div class="tab-pane tab-pane--columns ${ o.queryable_affiliations.length ? 'active' : ''}" id="affiliations-tabpanel" role="tabpanel" aria-labelledby="affiliations-tab">
+                        <br/>
+                        <p class="helptext pb-3">${i18n_helptext_affiliation}</p>
+                        <hr/>
+                        <h6 class="centered">${i18n_set_affiliation}</h6>
+                        <p class="helptext pb-3">${i18n_helptext_query_affiliation}</p>
+                        ${ tpl_set_affiliation_form(o) }
+                        <hr/>
+                        <h6 class="centered">${i18n_query_affiliation}</h6>
                         <form class="converse-form query-affiliation" @submit=${o.queryAffiliation}>
-                            <p class="helptext pb-3">${i18n_helptext_affiliation}</p>
                             <div class="form-group">
                                 <label for="affiliation">
                                     <strong>${i18n_affiliation}:</strong>
