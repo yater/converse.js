@@ -1129,10 +1129,22 @@ async function cleanup () {
 
 function fetchLoginCredentials (wait=0) {
     return new Promise(
-        debounce((resolve, reject) => {
+        debounce(async (resolve, reject) => {
             const xhr = new XMLHttpRequest();
+            /**
+             * *Hook* which allows 3rd party code to add or modify the
+             * headers sent with the credentials_url call.
+             * @event _converse#getCredentialsURLHeaders
+             */
+            const headers = await api.hook(
+                'getCredentialsURLHeaders',
+                this,
+                {'Accept': 'application/json, text/javascript'}
+            );
             xhr.open('GET', api.settings.get("credentials_url"), true);
-            xhr.setRequestHeader('Accept', 'application/json, text/javascript');
+            for (const name of headers) {
+                xhr.setRequestHeader(name, headers[name]);
+            }
             xhr.onload = () => {
                 if (xhr.status >= 200 && xhr.status < 400) {
                     const data = JSON.parse(xhr.responseText);
