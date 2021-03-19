@@ -21,6 +21,9 @@
 - Use the MUC stanza id when sending XEP-0333 markers
 - Add support for rendering unfurls via [mod_ogp](https://modules.prosody.im/mod_ogp.html)
 - Add a Description Of A Project (DOAP) file
+- Sass files have been moved into the `src` directory, where possible into the
+  relevant plugins directories. This allows better separation of the relevant
+  styles and allows for automatically smaller bundles when building without certain plugins.
 
 ### Breaking Changes
 
@@ -32,6 +35,7 @@ Removed events:
 * `chatBoxInsertedIntoDOM`
 * `bookmarkViewsInitialized`
 * `rosterGroupsFetched`
+* `renderToolbar`
 
 The `chatBoxMaximized` and `chatBoxMinimized` events now have the `model` as
 payload and not the `view` since it might not be exist at that time.

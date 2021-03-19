@@ -5,6 +5,8 @@ import { _converse, api, converse } from "@converse/headless/core";
 import { html } from 'lit-element';
 import { until } from 'lit-html/directives/until.js';
 
+import './styles/toolbar.scss';
+
 const Strophe = converse.env.Strophe
 
 
@@ -12,37 +14,36 @@ export class ChatToolbar extends CustomElement {
 
     static get properties () {
         return {
-            chatview: { type: Object }, // Used by getToolbarButtons hooks
-            composing_spoiler: { type: Boolean },
-            hidden_occupants: { type: Boolean },
-            is_groupchat: { type: Boolean },
-            message_limit: { type: Number },
-            model: { type: Object },
-            show_call_button: { type: Boolean },
-            show_emoji_button: { type: Boolean },
-            show_occupants_toggle: { type: Boolean },
-            show_send_button: { type: Boolean },
-            show_spoiler_button: { type: Boolean },
-            show_toolbar: { type: Boolean }
+            jid: { type: String  }
         }
     }
 
+    connectedCallback () {
+        super.connectedCallback();
+        this.model = _converse.chatboxes.get(this.jid);
+    }
+
     render () {
+        const show_toolbar = api.settings.get('show_toolbar');
+        const show_send_button = api.settings.get('show_send_button');
         const i18n_send_message = __('Send the message');
         return html`
-            ${ this.show_toolbar ? html`<span class="toolbar-buttons">${until(this.getButtons(), '')}</span>` : '' }
-            ${ this.show_send_button ? html`<button type="submit" class="btn send-button fa fa-paper-plane" title="${ i18n_send_message }"></button>` : '' }
+            ${ show_toolbar ? html`<span class="toolbar-buttons">${until(this.getButtons(), '')}</span>` : '' }
+            ${ show_send_button ? html`<button type="submit" class="btn send-button fa fa-paper-plane" title="${ i18n_send_message }"></button>` : '' }
         `;
     }
 
     getButtons () {
         const buttons = [];
 
-        if (this.show_emoji_button) {
-            buttons.push(html`<converse-emoji-dropdown .chatview=${this.chatview}></converse-dropdown>`);
+        const visible_buttons = api.settings.get('visible_toolbar_buttons');
+
+        if (visible_buttons.emoji) {
+            const chatview = _converse.chatboxviews.get(this.jid);
+            buttons.push(html`<converse-emoji-dropdown .chatview=${chatview}></converse-dropdown>`);
         }
 
-        if (this.show_call_button) {
+        if (visible_buttons.call) {
             const i18n_start_call = __('Start a call');
             buttons.push(html`
                 <button class="toggle-call" @click=${this.toggleCall} title="${i18n_start_call}">
@@ -53,10 +54,10 @@ export class ChatToolbar extends CustomElement {
         const i18n_chars_remaining = __('Message characters remaining');
         const message_limit = api.settings.get('message_limit');
         if (message_limit) {
-            buttons.push(html`<span class="right message-limit" title="${i18n_chars_remaining}">${this.message_limit}</span>`);
+            buttons.push(html`<span class="right message-limit" title="${i18n_chars_remaining}">${message_limit}</span>`);
         }
 
-        if (this.show_spoiler_button) {
+        if (visible_buttons.spoiler) {
             buttons.push(this.getSpoilerButton());
         }
 

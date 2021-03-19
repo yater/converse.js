@@ -1,6 +1,6 @@
 {
   "name": "converse.js",
-  "version": "7.0.2",
+  "version": "8.0.0",
   "description": "Browser based XMPP chat client",
   "browser": "dist/converse.js",
   "module": "src/converse.js",
@@ -122,7 +122,7 @@
     "urijs": "^1.19.6",
     "webpack": "^4.43.0",
     "webpack-cli": "^4.5.0",
-    "webpack-dev-server": "^3.11.0",
+    "webpack-dev-server": "^3.11.2",
     "webpack-merge": "^5.7.3",
     "xss": "^1.0.8"
   },

@@ -7,7 +7,7 @@ export default (o) => html`
         <input type="submit" class="btn btn-primary" name="join" value="Join"/>
     </form>
     <form class="sendXMPPMessage">
-        <span class="chat-toolbar no-text-select"></span>
+        <converse-chat-toolbar class="chat-toolbar no-text-select" jid="${o.jid}"></converse-chat-toolbar>
         <input type="text" placeholder="${o.label_spoiler_hint || ''}" value="${o.hint_value || ''}" class="${o.composing_spoiler ? '' : 'hidden'} spoiler-hint"/>
 
         <div class="suggestion-box">
@@ -27,5 +27,4 @@ export default (o) => html`
                 placeholder="${o.label_message}">${ o.message_value || '' }</textarea>
             <span class="suggestion-box__additions visually-hidden" role="status" aria-live="assertive" aria-relevant="additions"></span>
         </div>
-    </form>
-`;
+    </form>`;

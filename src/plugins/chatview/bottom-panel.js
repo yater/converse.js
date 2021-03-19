@@ -1,9 +1,8 @@
-import tpl_chatbox_message_form from './templates/chatbox_message_form.js';
-import tpl_toolbar from './templates/toolbar.js';
+import tpl_bottom_panel from 'shared/chat/templates/bottom-panel.js';
 import { ElementView } from '@converse/skeletor/src/element.js';
 import { __ } from 'i18n';
 import { _converse, api, converse } from "@converse/headless/core";
-import { html, render } from 'lit-html';
+import { render } from 'lit-html';
 import { clearMessages, parseMessageForCommands } from './utils.js';
 
 const { u } = converse.env;
@@ -26,58 +25,7 @@ export default class ChatBottomPanel extends ElementView {
     }
 
     render () {
-        render(html`<div class="message-form-container"></div>`, this);
-        this.renderMessageForm();
-    }
-
-    renderToolbar () {
-        if (!api.settings.get('show_toolbar')) {
-            return this;
-        }
-        const options = Object.assign({
-                'model': this.model,
-                'chatview': _converse.chatboxviews.get(this.getAttribute('jid'))
-            },
-            this.model.toJSON(),
-            this.getToolbarOptions()
-        );
-        render(tpl_toolbar(options), this.querySelector('.chat-toolbar'));
-        /**
-         * Triggered once the _converse.ChatBoxView's toolbar has been rendered
-         * @event _converse#renderToolbar
-         * @type { _converse.ChatBoxView }
-         * @example _converse.api.listen.on('renderToolbar', this => { ... });
-         */
-        api.trigger('renderToolbar', this);
-        return this;
-    }
-
-    renderMessageForm () {
-        const form_container = this.querySelector('.message-form-container');
-        render(
-            tpl_chatbox_message_form(
-                Object.assign(this.model.toJSON(), {
-                    'onDrop': ev => this.onDrop(ev),
-                    'hint_value': this.querySelector('.spoiler-hint')?.value,
-                    'inputChanged': ev => this.inputChanged(ev),
-                    'label_message': this.model.get('composing_spoiler') ? __('Hidden message') : __('Message'),
-                    'label_spoiler_hint': __('Optional hint'),
-                    'message_value': this.querySelector('.chat-textarea')?.value,
-                    'onChange': ev => this.updateCharCounter(ev.target.value),
-                    'onKeyDown': ev => this.onKeyDown(ev),
-                    'onKeyUp': ev => this.onKeyUp(ev),
-                    'onPaste': ev => this.onPaste(ev),
-                    'show_send_button': api.settings.get('show_send_button'),
-                    'show_toolbar': api.settings.get('show_toolbar'),
-                    'unread_msgs': __('You have unread messages'),
-                    'viewUnreadMessages': ev => this.viewUnreadMessages(ev),
-                })
-            ),
-            form_container
-        );
-        this.addEventListener('focusin', ev => this.emitFocused(ev));
-        this.addEventListener('focusout', ev => this.emitBlurred(ev));
-        this.renderToolbar();
+        render(tpl_bottom_panel({'jid': this.getAttribute('jid')}), this);
     }
 
     viewUnreadMessages (ev) {
@@ -101,14 +49,6 @@ export default class ChatBottomPanel extends ElementView {
                 this.insertIntoTextArea('', true, false);
             }
         }
-    }
-
-    emitFocused (ev) {
-        _converse.chatboxviews.get(this.getAttribute('jid'))?.emitFocused(ev);
-    }
-
-    emitBlurred (ev) {
-        _converse.chatboxviews.get(this.getAttribute('jid'))?.emitBlurred(ev);
     }
 
     getToolbarOptions () { // eslint-disable-line class-methods-use-this

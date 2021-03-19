@@ -32,7 +32,6 @@ export default class MUCBottomPanel extends BottomPanel {
         const can_edit = entered && !(this.model.features.get('moderated') && this.model.getOwnRole() === 'visitor');
         render(tpl_muc_bottom_panel({ can_edit, entered, 'model': this.model }), this);
         if (entered && can_edit) {
-            this.renderMessageForm();
             this.initMentionAutoComplete();
         }
     }
