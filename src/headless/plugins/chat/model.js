@@ -888,6 +888,7 @@ const ChatBox = ModelWithContact.extend({
      * chat.sendMessage('hello world');
      */
     async sendMessage (text, spoiler_hint) {
+        await api.emojis.initialize();
         const attrs = this.getOutgoingMessageAttributes(text, spoiler_hint);
         let message = this.messages.findWhere('correcting')
         if (message) {
