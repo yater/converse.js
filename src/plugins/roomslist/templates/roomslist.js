@@ -70,9 +70,11 @@ export default (o) => {
             <a class="controlbox-heading__btn show-list-muc-modal fa fa-list-ul"
                 @click=${(ev) => api.modal.show(MUCListModal, { 'model': o.model }, ev)}
                 title="${i18n_title_list_rooms}" data-toggle="modal" data-target="#muc-list-modal"></a>
-            <a class="controlbox-heading__btn show-add-muc-modal fa fa-plus"
+            <a class="controlbox-heading__btn show-add-muc-modal"
                 @click=${(ev) => api.modal.show(AddMUCModal, { 'model': o.model }, ev)}
-                title="${i18n_title_new_room}" data-toggle="modal" data-target="#add-chatrooms-modal"></a>
+                title="${i18n_title_new_room}" data-toggle="modal" data-target="#add-chatrooms-modal">
+                    <converse-icon class="fa fa-plus right" path-prefix="/dist" size="1em"></converse-icon>
+            </a>
         </div>
 
         <div class="list-container list-container--openrooms ${ o.rooms.length ? '' : 'hidden' }">

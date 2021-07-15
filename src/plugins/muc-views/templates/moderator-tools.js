@@ -51,7 +51,7 @@ const tpl_set_role_form = (o) => {
                 <div class="row">
                     <div class="col">
                         <label><strong>${i18n_new_role}:</strong></label>
-                        <select class="custom-select select-role" name="role">
+                        <select class="form-select select-role" name="role">
                             ${ o.assignable_roles.map(role => html`<option value="${role}" ?selected=${role === o.item.role}>${role}</option>`) }
                         </select>
                     </div>
@@ -99,7 +99,7 @@ const tpl_set_affiliation_form = (o) => {
                 <div class="row">
                     <div class="col">
                         <label><strong>${i18n_new_affiliation}:</strong></label>
-                        <select class="custom-select select-affiliation" name="affiliation">
+                        <select class="form-select select-affiliation" name="affiliation">
                             ${ o.assignable_affiliations.map(aff => html`<option value="${aff}" ?selected=${aff === o.item.affiliation}>${aff}</option>`) }
                         </select>
                     </div>
@@ -188,7 +188,7 @@ export default (o) => {
                                 </label>
                                 <div class="row">
                                     <div class="col">
-                                        <select class="custom-select select-affiliation" name="affiliation">
+                                        <select class="form-select select-affiliation" name="affiliation">
                                             ${o.queryable_affiliations.map(item => affiliation_option(Object.assign({item}, o)))}
                                         </select>
                                     </div>
@@ -227,7 +227,7 @@ export default (o) => {
                                 <label for="role"><strong>${i18n_role}:</strong></label>
                                 <div class="row">
                                     <div class="col">
-                                        <select class="custom-select select-role" name="role">
+                                        <select class="form-select select-role" name="role">
                                             ${o.queryable_roles.map(item => role_option(Object.assign({item}, o)))}
                                         </select>
                                     </div>

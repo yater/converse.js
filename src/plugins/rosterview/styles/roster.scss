@@ -57,7 +57,6 @@
         color: var(--text-color);
 
         converse-roster-contact {
-            width: 100%;
             overflow: hidden;
             white-space: nowrap;
             text-overflow: ellipsis;
@@ -68,7 +67,6 @@
         .group-toggle {
             font-family: var(--heading-font);
             display: block;
-            width: 100%;
             margin: 0.75em 0 0.25em 0;
         }
 
