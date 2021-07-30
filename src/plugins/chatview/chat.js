@@ -45,6 +45,18 @@ export default class ChatView extends BaseChatView {
         }, this.model.toJSON()));
     }
 
+    onWindowStateChanged ({ state }) {
+        if (state === 'visible') {
+            this.model.setChatState(_converse.ACTIVE, {'silent': true});
+            if (!this.model.isHidden() && this.model.get('num_unread')) {
+                this.model.clearUnreadMsgCounter();
+            }
+        } else if (state === 'hidden') {
+            this.model.setChatState(_converse.INACTIVE, {'silent': true});
+            this.model.sendChatState();
+        }
+    }
+
     getHelpMessages () { // eslint-disable-line class-methods-use-this
         return [
             `<strong>/clear</strong>: ${__('Remove messages')}`,

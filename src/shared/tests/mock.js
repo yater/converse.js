@@ -425,7 +425,6 @@ function createChatMessage (_converse, sender_jid, message) {
     })
     .c('body').t(message).up()
     .c('markable', {'xmlns': Strophe.NS.MARKERS}).up()
-    .c('request', {'xmlns': Strophe.NS.RECEIPTS}).up()
     .c('active', {'xmlns': Strophe.NS.CHATSTATES}).tree();
 }
 

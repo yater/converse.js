@@ -616,10 +616,10 @@ describe("A Chat Message", function () {
         expect(chatbox.messages.models.length, 1);
         const msg_object = chatbox.messages.models[0];
 
-        const msg_author = view.querySelector('.chat-content .chat-msg:last-child .chat-msg__author');
+        const msg_author = view.querySelector('.chat-content .chat-msg .chat-msg__author');
         expect(msg_author.textContent.trim()).toBe('Romeo Montague');
 
-        const msg_time = view.querySelector('.chat-content .chat-msg:last-child .chat-msg__time');
+        const msg_time = view.querySelector('.chat-content .chat-msg .chat-msg__time');
         const time = dayjs(msg_object.get('time')).format(api.settings.get('time_format'));
         expect(msg_time.textContent).toBe(time);
     }));
@@ -1125,9 +1125,7 @@ describe("A Chat Message", function () {
             }));
 
             it("will not show to the user an error message for a CSI message",
-                mock.initConverse(
-                    ['chatBoxesFetched'], {},
-                    async function (_converse) {
+                    mock.initConverse( ['chatBoxesFetched'], {}, async function (_converse) {
 
                 // See #1317
                 // https://github.com/conversejs/converse.js/issues/1317

@@ -1,7 +1,7 @@
 /*global mock, converse */
 
-const Strophe = converse.env.Strophe;
-const u = converse.env.utils;
+const { Strophe, u } = converse.env;
+
 // See: https://xmpp.org/rfcs/rfc3921.html
 
 
@@ -12,9 +12,12 @@ describe("A XEP-0333 Chat Marker", function () {
 
         await mock.waitForRoster(_converse, 'current', 1);
         const contact_jid = mock.cur_names[0].replace(/ /g,'.').toLowerCase() + '@montague.lit';
-        await mock.openChatBoxFor(_converse, contact_jid);
-        const msgid = u.getUniqueId();
-        const stanza = u.toStanza(`
+        const view = await mock.openChatBoxFor(_converse, contact_jid);
+
+        // When the chat is hidden, a <received> marker is sent out
+        view.model.set('hidden', true);
+        let msgid = u.getUniqueId();
+        let stanza = u.toStanza(`
             <message from='${contact_jid}'
                 id='${msgid}'
                 type="chat"
@@ -26,12 +29,33 @@ describe("A XEP-0333 Chat Marker", function () {
         const sent_stanzas = [];
         spyOn(_converse.connection, 'send').and.callFake(s => sent_stanzas.push(s?.nodeTree ?? s));
         _converse.connection._dataRecv(mock.createRequest(stanza));
-        await u.waitUntil(() => sent_stanzas.length === 2);
+        await u.waitUntil(() => sent_stanzas.length === 1);
         expect(Strophe.serialize(sent_stanzas[0])).toBe(
             `<message from="romeo@montague.lit/orchard" `+
                     `id="${sent_stanzas[0].getAttribute('id')}" `+
                     `to="${contact_jid}" type="chat" xmlns="jabber:client">`+
             `<received id="${msgid}" xmlns="urn:xmpp:chat-markers:0"/>`+
+            `</message>`);
+
+        // When the chat is not hidden, a <displayed> marker is sent out
+        view.model.set('hidden', false);
+        msgid = u.getUniqueId();
+        stanza = u.toStanza(`
+            <message from='${contact_jid}'
+                id='${msgid}'
+                type="chat"
+                to='${_converse.jid}'>
+              <body>My lord, dispatch; read o'er these articles.</body>
+              <markable xmlns='urn:xmpp:chat-markers:0'/>
+            </message>`);
+        _converse.connection._dataRecv(mock.createRequest(stanza));
+
+        await u.waitUntil(() => sent_stanzas.length === 2);
+        expect(Strophe.serialize(sent_stanzas[1])).toBe(
+            `<message from="romeo@montague.lit/orchard" `+
+                    `id="${sent_stanzas[1].getAttribute('id')}" `+
+                    `to="${contact_jid}" type="chat" xmlns="jabber:client">`+
+            `<displayed id="${msgid}" xmlns="urn:xmpp:chat-markers:0"/>`+
             `</message>`);
     }));
 

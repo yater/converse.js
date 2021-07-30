@@ -22,19 +22,24 @@ describe("XEP-0437 Room Activity Indicators", function () {
         const view = _converse.chatboxviews.get(muc_jid);
         expect(view.model.get('hidden')).toBe(false);
 
+
         const sent_IQs = _converse.connection.IQ_stanzas;
-        const iq_get = await u.waitUntil(() => sent_IQs.filter(iq => iq.querySelector(`iq query[xmlns="${Strophe.NS.MAM}"]`)).pop());
+        const iq = await u.waitUntil(() => sent_IQs.filter(iq => iq.querySelector(`iq query[xmlns="${Strophe.NS.MAM}"]`)).pop());
+
+        const sent_stanzas = [];
+        spyOn(_converse.connection, 'send').and.callFake(s => sent_stanzas.push(s?.nodeTree ?? s));
         const first_msg_id = _converse.connection.getUniqueId();
         const last_msg_id = _converse.connection.getUniqueId();
         let message = u.toStanza(
             `<message xmlns="jabber:client"
                     to="romeo@montague.lit/orchard"
                     from="${muc_jid}">
-                <result xmlns="urn:xmpp:mam:2" queryid="${iq_get.querySelector('query').getAttribute('queryid')}" id="${first_msg_id}">
+                <result xmlns="urn:xmpp:mam:2" queryid="${iq.querySelector('query').getAttribute('queryid')}" id="${first_msg_id}">
                     <forwarded xmlns="urn:xmpp:forward:0">
                         <delay xmlns="urn:xmpp:delay" stamp="2018-01-09T06:15:23Z"/>
                         <message from="${muc_jid}/some1" type="groupchat">
                             <body>1st MAM Message</body>
+                            <markable xmlns="urn:xmpp:chat-markers:0"></markable>
                         </message>
                     </forwarded>
                 </result>
@@ -45,11 +50,12 @@ describe("XEP-0437 Room Activity Indicators", function () {
             `<message xmlns="jabber:client"
                     to="romeo@montague.lit/orchard"
                     from="${muc_jid}">
-                <result xmlns="urn:xmpp:mam:2" queryid="${iq_get.querySelector('query').getAttribute('queryid')}" id="${last_msg_id}">
+                <result xmlns="urn:xmpp:mam:2" queryid="${iq.querySelector('query').getAttribute('queryid')}" id="${last_msg_id}">
                     <forwarded xmlns="urn:xmpp:forward:0">
                         <delay xmlns="urn:xmpp:delay" stamp="2018-01-09T06:16:23Z"/>
                         <message from="${muc_jid}/some1" type="groupchat">
                             <body>2nd MAM Message</body>
+                            <markable xmlns="urn:xmpp:chat-markers:0"></markable>
                         </message>
                     </forwarded>
                 </result>
@@ -57,7 +63,7 @@ describe("XEP-0437 Room Activity Indicators", function () {
         _converse.connection._dataRecv(mock.createRequest(message));
 
         const result = u.toStanza(
-            `<iq type='result' id='${iq_get.getAttribute('id')}'>
+            `<iq type='result' id='${iq.getAttribute('id')}'>
                 <fin xmlns='urn:xmpp:mam:2'>
                     <set xmlns='http://jabber.org/protocol/rsm'>
                         <first index='0'>${first_msg_id}</first>
@@ -69,14 +75,12 @@ describe("XEP-0437 Room Activity Indicators", function () {
         _converse.connection._dataRecv(mock.createRequest(result));
         await u.waitUntil(() => view.model.messages.length === 2);
 
-        const sent_stanzas = [];
-        spyOn(_converse.connection, 'send').and.callFake(s => sent_stanzas.push(s?.nodeTree ?? s));
         view.model.save({'hidden': true});
         await u.waitUntil(() => sent_stanzas.length === 3);
 
         expect(Strophe.serialize(sent_stanzas[0])).toBe(
             `<message from="${_converse.jid}" id="${sent_stanzas[0].getAttribute('id')}" to="lounge@montague.lit" type="groupchat" xmlns="jabber:client">`+
-                `<received id="${last_msg_id}" xmlns="urn:xmpp:chat-markers:0"/>`+
+                `<displayed id="${last_msg_id}" xmlns="urn:xmpp:chat-markers:0"/>`+
             `</message>`
         );
         expect(Strophe.serialize(sent_stanzas[1])).toBe(
