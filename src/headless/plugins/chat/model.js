@@ -639,7 +639,7 @@ const ChatBox = ModelWithContact.extend({
      * @method _converse.ChatBox#getDuplicateMessage
      * @param { object } attrs - Attributes representing a received
      *  message, as returned by {@link parseMessage}
-     * @returns {Promise<_converse.Message>}
+     * @returns {_converse.Message}
      */
     getDuplicateMessage (attrs) {
         const queries = [
@@ -671,9 +671,9 @@ const ChatBox = ModelWithContact.extend({
                 'from': attrs.from,
                 'msgid': attrs.msgid
             }
-            if (!attrs.is_encrypted) {
-                // We can't match the message if it's a reflected
-                // encrypted message (e.g. via MAM or in a MUC)
+            if (attrs.is_encrypted) {
+                query['plaintext'] =  attrs.plaintext;
+            } else {
                 query['message'] =  attrs.message;
             }
             return query;

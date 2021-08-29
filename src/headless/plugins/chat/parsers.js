@@ -156,6 +156,7 @@ export async function parseMessage (stanza, _converse) {
     const delay = sizzle(`delay[xmlns="${Strophe.NS.DELAY}"]`, original_stanza).pop();
     const marker = getChatMarker(stanza);
     const now = new Date().toISOString();
+
     let attrs = Object.assign(
         {
             contact_jid,
