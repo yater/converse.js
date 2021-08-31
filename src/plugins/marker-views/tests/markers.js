@@ -26,7 +26,7 @@ describe("A XEP-0333 Chat Marker", function () {
         const sent_stanzas = [];
         spyOn(_converse.connection, 'send').and.callFake(s => sent_stanzas.push(s?.nodeTree ?? s));
         _converse.connection._dataRecv(mock.createRequest(stanza));
-        await u.waitUntil(() => sent_stanzas.length === 2);
+        await u.waitUntil(() => sent_stanzas.length === 1);
         expect(Strophe.serialize(sent_stanzas[0])).toBe(
             `<message from="romeo@montague.lit/orchard" `+
                     `id="${sent_stanzas[0].getAttribute('id')}" `+

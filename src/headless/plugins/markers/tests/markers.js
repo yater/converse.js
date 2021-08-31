@@ -41,13 +41,13 @@ describe("A XEP-0333 Chat Marker", function () {
         );
         expect(Strophe.serialize(messages[1])).toBe(
             `<message from="${_converse.jid}" id="${messages[1].getAttribute('id')}" to="${muc_jid}" type="groupchat" xmlns="jabber:client">`+
-                `<displayed id="reflected-message" xmlns="urn:xmpp:chat-markers:0"/>`+
+                `<received id="reflected-message" xmlns="urn:xmpp:chat-markers:0"/>`+
             `</message>`);
 
         expect(model.markers.length).toBe(1);
 
         const o = {};
-        o[_converse.bare_jid] = 'displayed';
+        o[_converse.bare_jid] = 'received';
         expect(model.markers.at(0).get('marked_by')).toEqual(o);
 
 

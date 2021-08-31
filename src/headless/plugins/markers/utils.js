@@ -27,7 +27,7 @@ export function getMessageIdToMark (message) {
  * @param { ('received'|'displayed'|'acknowledged') } type - The type of chat marker being added
  * @returns { ChatMarker }
  */
-export function addChatMarker (chat, message, by_jid, type='displayed') {
+export function addChatMarker (chat, message, by_jid, type='received') {
     if (chat.get('type') === _converse.CHATROOMS_TYPE) {
         if (
             by_jid !== _converse.bare_jid &&
@@ -94,7 +94,7 @@ export function sendChatMarker (to_jid, id, type, msg_type) {
  * @param { Boolean } [force=false] - Whether a marker should be sent for the
  *  message, even if it didn't include a `markable` element.
  */
-export function sendMarkerForLastMessage (chat, type='displayed', force=false) {
+export function sendMarkerForLastMessage (chat, type='received', force=false) {
     const msgs = Array.from(chat.messages.models);
     msgs.reverse();
     const msg = msgs.find(m => force || m.get('is_markable'));
@@ -111,7 +111,7 @@ export function sendMarkerForLastMessage (chat, type='displayed', force=false) {
  * @returns { Boolean } Returns `true` or `false` depending on whether the
  *  marker was actually sent out.
  */
-export function sendMarkerForMessage (msg, type='displayed', force=false) {
+export function sendMarkerForMessage (msg, type='received', force=false) {
     if (!msg || !api.settings.get('send_chat_markers').includes(type)) {
         return false;
     }
@@ -133,7 +133,7 @@ export function sendMarkerForMessage (msg, type='displayed', force=false) {
  * @returns { Boolean } Returns `true` or `false` depending on whether the
  *  marker was actually sent out.
  */
-export function sendMarkerForMUCMessage (chat, msg, type='displayed') {
+export function sendMarkerForMUCMessage (chat, msg, type='received') {
     if (!Object.keys(MARKER_TYPES).includes(type)) {
         throw new TypeError('Invalid XEP-0333 chat marker type');
     }
@@ -142,6 +142,7 @@ export function sendMarkerForMUCMessage (chat, msg, type='displayed') {
         return false;
     }
     if (msg?.get('is_markable')) {
+        debugger;
         const mid = getMessageIdToMark(msg);
         if (chat.markers.get(mid)?.get('marked_by')?.[_converse.bare_jid] ?? -1 > MARKER_TYPES[type]) {
             // Already marked, either by the same marker value or by a higher ranked one.
