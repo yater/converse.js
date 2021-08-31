@@ -86,7 +86,7 @@ describe("A ChatBox's Unread Message Count", function () {
         expect(sent_stanzas[0].querySelector('received')).toBeDefined();
     }));
 
-    fit("is cleared when the chat was scrolled down and the window become focused",
+    it("is cleared when the chat was scrolled down and the window become focused",
             mock.initConverse(['chatBoxesFetched'], {}, async function (_converse) {
 
         await mock.waitForRoster(_converse, 'current', 1);
