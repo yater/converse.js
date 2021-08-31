@@ -33,14 +33,31 @@ export class StanzaParseError extends Error {
  * @param { XMLElement } stanza - The message stanza
  * @returns { Object }
  */
-export function getStanzaIDs (stanza, original_stanza) {
-    const attrs = {};
+export async function getStanzaIDs (stanza, original_stanza) {
     // Store generic stanza ids
     const sids = sizzle(`stanza-id[xmlns="${Strophe.NS.SID}"]`, stanza);
-    const sid_attrs = sids.reduce((acc, s) => {
+
+    // For each id by a purported entity, check whether that entity actually
+    // supports stable ids. Otherwise ignore the value as spoofed.
+    // https://xmpp.org/extensions/xep-0359.html#security
+    const promises = sids.map(async (acc, s) => {
+        const o = {};
+        const jid = s.getAttribute('by');
+        if (await api.disco.supports(Strophe.NS.SID, jid)) {
+            o[`stanza_id ${jid}`] = s.getAttribute('id');
+        } else {
+            log.warn("Ignoriing stanza-id from entity that doesn't advertise support via service discovery");
+        }
+        return o;
+    }, {});
+
+    const sid_attrs = (await Promise.all(promises)).reduce((acc, s) => {
         acc[`stanza_id ${s.getAttribute('by')}`] = s.getAttribute('id');
         return acc;
     }, {});
+
+
+    const attrs = {};
     Object.assign(attrs, sid_attrs);
 
     // Store the archive id

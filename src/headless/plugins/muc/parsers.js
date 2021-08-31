@@ -207,15 +207,14 @@ export async function parseMUCMessage (stanza, chatbox, _converse) {
         getOutOfBandAttributes(stanza),
         getSpoilerAttributes(stanza),
         getCorrectionAttributes(stanza, original_stanza),
-        getStanzaIDs(stanza, original_stanza),
         getOpenGraphMetadata(stanza),
         getRetractionAttributes(stanza, original_stanza),
         getModerationAttributes(stanza),
         getEncryptionAttributes(stanza, _converse),
     );
 
-
     await api.emojis.initialize();
+    const stanza_ids = await getStanzaIDs(stanza, original_stanza);
     attrs = Object.assign(
         {
             'is_only_emojis': attrs.body ? u.isOnlyEmojis(attrs.body) : false,
@@ -223,7 +222,8 @@ export async function parseMUCMessage (stanza, chatbox, _converse) {
             'message': attrs.body || attrs.error, // TODO: Remove and use body and error attributes instead
             'sender': attrs.nick === chatbox.get('nick') ? 'me' : 'them'
         },
-        attrs
+        attrs,
+        stanza_ids
     );
 
     if (attrs.is_archived && original_stanza.getAttribute('from') !== attrs.from_muc) {

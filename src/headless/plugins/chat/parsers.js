@@ -187,10 +187,10 @@ export async function parseMessage (stanza, _converse) {
         getOutOfBandAttributes(stanza),
         getSpoilerAttributes(stanza),
         getCorrectionAttributes(stanza, original_stanza),
-        getStanzaIDs(stanza, original_stanza),
         getRetractionAttributes(stanza, original_stanza),
         getEncryptionAttributes(stanza, _converse)
     );
+
 
     if (attrs.is_archived) {
         const from = original_stanza.getAttribute('from');
@@ -198,14 +198,17 @@ export async function parseMessage (stanza, _converse) {
             return new StanzaParseError(`Invalid Stanza: Forged MAM message from ${from}`, stanza);
         }
     }
+
     await api.emojis.initialize();
+    const stanza_ids = await getStanzaIDs(stanza, original_stanza);
     attrs = Object.assign(
         {
             'message': attrs.body || attrs.error, // TODO: Remove and use body and error attributes instead
             'is_only_emojis': attrs.body ? u.isOnlyEmojis(attrs.body) : false,
             'is_valid_receipt_request': isValidReceiptRequest(stanza, attrs)
         },
-        attrs
+        attrs,
+        stanza_ids
     );
 
     // We prefer to use one of the XEP-0359 unique and stable stanza IDs

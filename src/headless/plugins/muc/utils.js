@@ -7,6 +7,7 @@ import { safeSave } from '@converse/headless/utils/core.js';
 
 const { Strophe, sizzle, u } = converse.env;
 
+
 /**
  * Given an occupant model, see which roles may be assigned to that user.
  * @param { Model } occupant
