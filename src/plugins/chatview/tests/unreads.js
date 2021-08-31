@@ -6,11 +6,11 @@ const { u } = converse.env;
 describe("A ChatBox's Unread Message Count", function () {
 
     it("is incremented when the message is received and ChatBoxView is scrolled up",
-        mock.initConverse(['chatBoxesFetched'], {}, async function (_converse) {
+            mock.initConverse(['chatBoxesFetched'], {}, async function (_converse) {
 
         await mock.waitForRoster(_converse, 'current', 1);
-        const sender_jid = mock.cur_names[0].replace(/ /g,'.').toLowerCase() + '@montague.lit',
-                msg = mock.createChatMessage(_converse, sender_jid, 'This message will be unread');
+        const sender_jid = mock.cur_names[0].replace(/ /g,'.').toLowerCase() + '@montague.lit';
+        const msg = mock.createChatMessage(_converse, sender_jid, 'This message will be unread');
 
         const view = await mock.openChatBoxFor(_converse, sender_jid)
         const sent_stanzas = [];
