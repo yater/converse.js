@@ -77,12 +77,16 @@ export function addChatMarker (chat, message, by_jid, type='received') {
  * @param { String } msg_type
  */
 export function sendChatMarker (to_jid, id, type, msg_type) {
+    if (!id) {
+        log.warn("Won't send out a chat marker if we don't have a valid id attribute");
+        return
+    }
     const stanza = $msg({
         'from': _converse.connection.jid,
         'id': u.getUniqueId(),
         'to': to_jid,
         'type': msg_type ? msg_type : 'chat'
-    }).c(type, {'xmlns': Strophe.NS.MARKERS, 'id': id});
+    }).c(type, {'xmlns': Strophe.NS.MARKERS, id });
     api.send(stanza);
 }
 
@@ -98,7 +102,14 @@ export function sendMarkerForLastMessage (chat, type='received', force=false) {
     const msgs = Array.from(chat.messages.models);
     msgs.reverse();
     const msg = msgs.find(m => force || m.get('is_markable'));
-    msg && sendMarkerForMessage(msg, type, force) && addChatMarker(chat, msg, _converse.bare_jid);
+    if (!msg) {
+        return;
+    }
+    if (msg.get('type') === 'groupchat') {
+        sendMarkerForMUCMessage(chat, msg, type) && addChatMarker(chat, msg, _converse.bare_jid);
+    } else {
+        sendMarkerForMessage(msg, type, force) && addChatMarker(chat, msg, _converse.bare_jid);
+    }
 }
 
 
@@ -148,8 +159,12 @@ export function sendMarkerForMUCMessage (chat, msg, type='received') {
             // https://xmpp.org/extensions/xep-0333.html#format
             return false;
         }
+
+        // FIXME: first check whether XEP-0359 is supported, otherwise
+        // <stanza-id> elements from the MUC must be considered as spoofed
         const key = `stanza_id ${chat.get('jid')}`;
         const id = msg.get(key);
+        // https://xmpp.org/extensions/xep-0333.html#rules-muc
         if (!id) {
             log.error(`Can't send marker for message without stanza ID: ${key}`);
             return false;

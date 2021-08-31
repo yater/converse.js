@@ -35,6 +35,7 @@ describe("XEP-0437 Room Activity Indicators", function () {
                         <delay xmlns="urn:xmpp:delay" stamp="2018-01-09T06:15:23Z"/>
                         <message from="${muc_jid}/some1" type="groupchat">
                             <body>1st MAM Message</body>
+                            <markable xmlns="urn:xmpp:chat-markers:0"></markable>
                         </message>
                     </forwarded>
                 </result>
@@ -50,6 +51,7 @@ describe("XEP-0437 Room Activity Indicators", function () {
                         <delay xmlns="urn:xmpp:delay" stamp="2018-01-09T06:16:23Z"/>
                         <message from="${muc_jid}/some1" type="groupchat">
                             <body>2nd MAM Message</body>
+                            <markable xmlns="urn:xmpp:chat-markers:0"></markable>
                         </message>
                     </forwarded>
                 </result>
