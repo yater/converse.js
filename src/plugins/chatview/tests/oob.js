@@ -84,7 +84,7 @@ describe("A Chat Message", function () {
             let msg = view.querySelector('.chat-msg .chat-msg__text');
             expect(msg.classList.length).toBe(1);
             expect(msg.textContent).toEqual('Have you seen this funny video?');
-            let media = view.querySelector('.chat-msg .chat-msg__media');
+            const media = view.querySelector('.chat-msg .chat-msg__media');
             expect(media.innerHTML.replace(/(\r\n|\n|\r)/gm, "").replace(/<!-.*?->/g, '')).toEqual(
                 `<video controls="" preload="metadata" src="${Strophe.xmlescape(url)}"></video>`+
                 `<a target="_blank" rel="noopener" href="${Strophe.xmlescape(url)}">${Strophe.xmlescape(url)}</a>`);
@@ -99,12 +99,9 @@ describe("A Chat Message", function () {
                 </message>`);
             _converse.connection._dataRecv(mock.createRequest(stanza));
             await new Promise(resolve => view.model.messages.once('rendered', resolve));
-            msg = view.querySelector('.chat-msg:last-child .chat-msg__text');
+            msg = view.querySelector('converse-chat-message .chat-msg__text');
             expect(msg.innerHTML.replace(/<!-.*?->/g, '')).toEqual('Have you seen this funny video?');
-            media = view.querySelector('.chat-msg:last-child .chat-msg__media');
-            expect(media.innerHTML.replace(/(\r\n|\n|\r)/gm, "").replace(/<!-.*?->/g, '')).toEqual(
-                `<video controls="" preload="metadata" src="${Strophe.xmlescape(url)}"></video>`+
-                `<a target="_blank" rel="noopener" href="${Strophe.xmlescape(url)}">${Strophe.xmlescape(url)}</a>`);
+            expect(view.querySelector('.chat-msg:last-child .chat-msg__media')).toBe(null);
         }));
 
         it("will render download links for files from oob URLs",
