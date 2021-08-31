@@ -418,14 +418,15 @@ async function waitForRoster (_converse, type='current', length=-1, include_nick
 
 function createChatMessage (_converse, sender_jid, message) {
     return $msg({
-                from: sender_jid,
-                to: _converse.connection.jid,
-                type: 'chat',
-                id: (new Date()).getTime()
-            })
-            .c('body').t(message).up()
-            .c('markable', {'xmlns': Strophe.NS.MARKERS}).up()
-            .c('active', {'xmlns': Strophe.NS.CHATSTATES}).tree();
+        'from': sender_jid,
+        'id': (new Date()).getTime(),
+        'to': _converse.connection.jid,
+        'type': 'chat',
+    })
+    .c('body').t(message).up()
+    .c('markable', {'xmlns': Strophe.NS.MARKERS}).up()
+    .c('request', {'xmlns': Strophe.NS.RECEIPTS}).up()
+    .c('active', {'xmlns': Strophe.NS.CHATSTATES}).tree();
 }
 
 async function sendMessage (view, message) {
