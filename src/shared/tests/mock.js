@@ -624,7 +624,7 @@ async function _initConverse (settings) {
         'enable_smacks': false,
         'i18n': 'en',
         'persistent_store': 'localStorage',
-        'loglevel': 'warn',
+        'loglevel': 'debug',
         'no_trimming': true,
         'play_sounds': false,
         'use_emojione': false,

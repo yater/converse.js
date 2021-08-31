@@ -142,7 +142,6 @@ export function sendMarkerForMUCMessage (chat, msg, type='received') {
         return false;
     }
     if (msg?.get('is_markable')) {
-        debugger;
         const mid = getMessageIdToMark(msg);
         if (chat.markers.get(mid)?.get('marked_by')?.[_converse.bare_jid] ?? -1 > MARKER_TYPES[type]) {
             // Already marked, either by the same marker value or by a higher ranked one.
@@ -170,7 +169,7 @@ export function sendMarkerForMUCMessage (chat, msg, type='received') {
  * @param { _converse.Message } message
  */
 export function handleUnreadMessage (chat, message) {
-    if (!message?.get('body') || !u.isNewMessage(message) || chat.isHidden()) {
+    if (!message?.get('body') || !u.isNewMessage(message)) {
         return
     }
     sendMarkerForMessage(message) && addChatMarker(chat, message, _converse.bare_jid);

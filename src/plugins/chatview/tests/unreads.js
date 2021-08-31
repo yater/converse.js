@@ -1,6 +1,6 @@
 /*global mock, converse */
 
-const { u } = converse.env;
+const { Strophe, sizzle, u } = converse.env;
 
 
 describe("A ChatBox's Unread Message Count", function () {
@@ -86,7 +86,7 @@ describe("A ChatBox's Unread Message Count", function () {
         expect(sent_stanzas[0].querySelector('received')).toBeDefined();
     }));
 
-    it("is cleared when the chat was scrolled down and the window become focused",
+    fit("is cleared when the chat was scrolled down and the window become focused",
             mock.initConverse(['chatBoxesFetched'], {}, async function (_converse) {
 
         await mock.waitForRoster(_converse, 'current', 1);
@@ -94,7 +94,9 @@ describe("A ChatBox's Unread Message Count", function () {
         const msgFactory = () => mock.createChatMessage(_converse, sender_jid, 'This message will be unread');
         await mock.openChatBoxFor(_converse, sender_jid);
         const sent_stanzas = [];
-        spyOn(_converse.connection, 'send').and.callFake(s => sent_stanzas.push(s?.nodeTree ?? s));
+        spyOn(_converse.connection, 'send').and.callFake(s => {
+            sent_stanzas.push(s?.nodeTree ?? s)
+        });
         const chatbox = _converse.chatboxes.get(sender_jid);
         _converse.windowState = 'hidden';
         const msg = msgFactory();
@@ -103,8 +105,7 @@ describe("A ChatBox's Unread Message Count", function () {
         expect(chatbox.get('num_unread')).toBe(1);
         const msgid = chatbox.messages.last().get('id');
         expect(chatbox.get('first_unread_id')).toBe(msgid);
-        await u.waitUntil(() => sent_stanzas.filter(s => s.nodeName === 'message').length === 1);
-        expect(sent_stanzas[0].querySelector('received')).toBeDefined();
+        await u.waitUntil(() => sent_stanzas.filter(s => sizzle(`received[xmlns="${Strophe.NS.MARKERS}"]`, s).length).length === 1);
         _converse.saveWindowState({'type': 'focus'});
         await u.waitUntil(() => sent_stanzas.filter(s => s.nodeName === 'message').length === 2);
         expect(sent_stanzas[1].querySelector('displayed')).toBeDefined();

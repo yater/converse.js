@@ -229,9 +229,10 @@ const ChatBox = ModelWithContact.extend({
         if (handled) {
             return;
         }
+
         if (
-                !this.handleReceipt(attrs) &&
-                !(await this.handleRetraction(attrs))
+            !this.handleReceipt(attrs) &&
+            !(await this.handleRetraction(attrs))
         ) {
             this.setEditable(attrs, attrs.time);
 
