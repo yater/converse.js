@@ -407,7 +407,7 @@ const ChatRoomMixin = {
 
     async handleErrorMessageStanza (stanza) {
         const { __ } = _converse;
-        const attrs = await parseMUCMessage(stanza, this, _converse);
+        const attrs = await parseMUCMessage(stanza, this);
         if (!(await this.shouldShowErrorMessage(attrs))) {
             return;
         }
@@ -499,7 +499,7 @@ const ChatRoomMixin = {
                 'num_unread': this.get('num_unread') + mentions.length
             });
             mentions.forEach(async stanza => {
-                const attrs = await parseMUCMessage(stanza, this, _converse);
+                const attrs = await parseMUCMessage(stanza, this);
                 const data = { stanza, attrs, 'chatbox': this };
                 api.trigger('message', data);
             });

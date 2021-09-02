@@ -1,7 +1,7 @@
 import dayjs from 'dayjs';
 import log from '@converse/headless/log';
 import u from '@converse/headless/utils/core';
-import { api, converse } from '@converse/headless/core';
+import { _converse, api, converse } from '@converse/headless/core';
 import { rejectMessage } from '@converse/headless/shared/actions';
 
 import {
@@ -33,10 +33,11 @@ const { Strophe, sizzle } = converse.env;
  * Parses a passed in message stanza and returns an object of attributes.
  * @method st#parseMessage
  * @param { XMLElement } stanza - The message stanza
- * @param { _converse } _converse
+ * @param { MAMQueryResult } [mamdata] - The data returned by {@link api.archive.query}
+ *  if this messsage is the result of a XEP-0313 MAM query
  * @returns { (MessageAttributes|Error) }
  */
-export async function parseMessage (stanza, _converse) {
+export async function parseMessage (stanza, mamdata) {
     throwErrorIfInvalidForward(stanza);
 
     let to_jid = stanza.getAttribute('to');
@@ -113,6 +114,7 @@ export async function parseMessage (stanza, _converse) {
      * @property { Boolean } is_encrypted -  Is this message XEP-0384  encrypted?
      * @property { Boolean } is_error - Whether an error was received for this message
      * @property { Boolean } is_headline - Is this a "headline" message?
+     * @property { Boolean } is_last_mam_result - Is this the last message received in a MAM result page?
      * @property { Boolean } is_markable - Can this message be marked with a XEP-0333 chat marker?
      * @property { Boolean } is_marker - Is this message a XEP-0333 Chat Marker?
      * @property { Boolean } is_only_emojis - Does the message body contain only emojis?
@@ -121,6 +123,7 @@ export async function parseMessage (stanza, _converse) {
      * @property { Boolean } is_unstyled - Whether XEP-0393 styling hints should be ignored
      * @property { Boolean } is_valid_receipt_request - Does this message request a XEP-0184 receipt (and is not from us or a carbon or archived message)
      * @property { Object } encrypted -  XEP-0384 encryption payload attributes
+     * @property { String } archive_id - The XEP-0313 archive id for this message
      * @property { String } body - The contents of the <body> tag of the message stanza
      * @property { String } chat_state - The XEP-0085 chat state notification contained in this message
      * @property { String } contact_jid - The JID of the other person or entity
@@ -188,6 +191,8 @@ export async function parseMessage (stanza, _converse) {
         getRetractionAttributes(stanza, original_stanza),
         getEncryptionAttributes(stanza, _converse)
     );
+
+    attrs['is_last_mam_result'] = (attrs.is_archived && mamdata) ? attrs['archive_id'] === mamdata.last : false;
 
     if (attrs.is_archived) {
         const from = original_stanza.getAttribute('from');

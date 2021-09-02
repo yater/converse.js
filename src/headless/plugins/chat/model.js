@@ -158,7 +158,7 @@ const ChatBox = ModelWithContact.extend({
 
     async handleErrorMessageStanza (stanza) {
         const { __ } = _converse;
-        const attrs = await parseMessage(stanza, _converse);
+        const attrs = await parseMessage(stanza);
         if (!await this.shouldShowErrorMessage(attrs)) {
             return;
         }

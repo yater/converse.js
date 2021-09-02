@@ -100,7 +100,7 @@ converse.plugins.add('converse-headlines', {
                     'type': _converse.HEADLINES_TYPE,
                     'from': from_jid
                 });
-                const attrs = await parseMessage(stanza, _converse);
+                const attrs = await parseMessage(stanza);
                 await chatbox.createMessage(attrs);
                 api.trigger('message', {chatbox, stanza, attrs});
             }

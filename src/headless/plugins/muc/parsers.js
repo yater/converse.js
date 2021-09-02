@@ -20,7 +20,7 @@ import {
     isValidReceiptRequest,
     throwErrorIfInvalidForward,
 } from '@converse/headless/shared/parsers';
-import { api, converse } from '@converse/headless/core';
+import { _converse, api, converse } from '@converse/headless/core';
 
 const { Strophe, sizzle, u } = converse.env;
 const { NS } = Strophe;
@@ -99,10 +99,11 @@ function getModerationAttributes (stanza) {
  * @param { XMLElement } original_stanza - The original stanza, that contains the
  *  message stanza, if it was contained, otherwise it's the message stanza itself.
  * @param { _converse.ChatRoom } chatbox
- * @param { _converse } _converse
+ * @param { MAMQueryResult } [mamdata] - The data returned by {@link api.archive.query}
+ *  if this messsage is the result of a XEP-0313 MAM query
  * @returns { Promise<MUCMessageAttributes|Error> }
  */
-export async function parseMUCMessage (stanza, chatbox, _converse) {
+export async function parseMUCMessage (stanza, chatbox, mamdata) {
     throwErrorIfInvalidForward(stanza);
 
     const selector = `[xmlns="${NS.MAM}"] > forwarded[xmlns="${NS.FORWARD}"] > message`;
@@ -133,6 +134,7 @@ export async function parseMUCMessage (stanza, chatbox, _converse) {
      * @property { Boolean } is_encrypted -  Is this message XEP-0384  encrypted?
      * @property { Boolean } is_error - Whether an error was received for this message
      * @property { Boolean } is_headline - Is this a "headline" message?
+     * @property { Boolean } is_last_mam_result - Is this the last message received in a MAM result page?
      * @property { Boolean } is_markable - Can this message be marked with a XEP-0333 chat marker?
      * @property { Boolean } is_marker - Is this message a XEP-0333 Chat Marker?
      * @property { Boolean } is_only_emojis - Does the message body contain only emojis?
@@ -141,6 +143,7 @@ export async function parseMUCMessage (stanza, chatbox, _converse) {
      * @property { Boolean } is_unstyled - Whether XEP-0393 styling hints should be ignored
      * @property { Boolean } is_valid_receipt_request - Does this message request a XEP-0184 receipt (and is not from us or a carbon or archived message)
      * @property { Object } encrypted -  XEP-0384 encryption payload attributes
+     * @property { String } archive_id - The XEP-0313 archive id for this message
      * @property { String } body - The contents of the <body> tag of the message stanza
      * @property { String } chat_state - The XEP-0085 chat state notification contained in this message
      * @property { String } edited - An ISO8601 string recording the time that the message was edited per XEP-0308
@@ -214,6 +217,7 @@ export async function parseMUCMessage (stanza, chatbox, _converse) {
         getEncryptionAttributes(stanza, _converse),
     );
 
+    attrs['is_last_mam_result'] = (attrs.is_archived && mamdata) ? attrs['archive_id'] === mamdata.last : false;
 
     await api.emojis.initialize();
     attrs = Object.assign(

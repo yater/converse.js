@@ -4,6 +4,7 @@ import { MARKER_TYPES } from './constants.js';
 import { _converse, api, converse } from '@converse/headless/core.js';
 import { getOpenPromise } from '@converse/openpromise';
 import { initStorage } from '@converse/headless/utils/storage.js';
+import { isIntermediateMAMMessage } from '@converse/headless/plugins/mam/utils.js';
 
 const { $msg, Strophe, u } = converse.env;
 
@@ -198,7 +199,7 @@ export function sendMarkerForMUCMessage (chat, msg, type='received') {
  * @param { _converse.Message } message
  */
 export function handleUnreadMessage (chat, message) {
-    if (!message || !message?.get('body') || isAlreadyMarked(chat, message)) {
+    if (!message || !message?.get('body') || isIntermediateMAMMessage(message) || isAlreadyMarked(chat, message)) {
         return
     }
     const type = chat.isHidden() ? 'received' : 'displayed';

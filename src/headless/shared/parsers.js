@@ -47,7 +47,7 @@ export function getStanzaIDs (stanza, original_stanza) {
     const result = sizzle(`message > result[xmlns="${Strophe.NS.MAM}"]`, original_stanza).pop();
     if (result) {
         const by_jid = original_stanza.getAttribute('from') || _converse.bare_jid;
-        attrs[`stanza_id ${by_jid}`] = result.getAttribute('id');
+        attrs[`stanza_id ${by_jid}`] = attrs['archive_id'] = result.getAttribute('id');
     }
 
     // Store the origin id

@@ -265,6 +265,7 @@ export default {
 
             let error;
             const iq_result = await api.sendIQ(stanza, api.settings.get('message_archiving_timeout'), false)
+
             if (iq_result === null) {
                 const { __ } = _converse;
                 const err_msg = __("Timeout while trying to fetch archived messages.");
@@ -285,6 +286,8 @@ export default {
             let rsm;
             const fin = iq_result && sizzle(`fin[xmlns="${NS.MAM}"]`, iq_result).pop();
             const complete = fin?.getAttribute('complete') === 'true'
+            const first = fin && sizzle(`set[xmlns="${Strophe.NS.RSM}"] first`, fin).pop()?.textContent;
+            const last = fin && sizzle(`set[xmlns="${Strophe.NS.RSM}"] last`, fin).pop()?.textContent;
             const set = sizzle(`set[xmlns="${NS.RSM}"]`, fin).pop();
             if (set) {
                 rsm = new RSM({...options, 'xml': set});
@@ -296,10 +299,12 @@ export default {
              *  You can call `next()` or `previous()` on this instance,
              *  to get the RSM query parameters for the next or previous
              *  page in the result set.
-             * @property { Boolean } complete
+             * @property { Boolean } [complete]
+             * @property { String } [first]
+             * @property { String } [last]
              * @property { Error } [error]
              */
-            return { messages, rsm, complete };
+            return { messages, rsm, complete, first, last };
         }
     }
 }

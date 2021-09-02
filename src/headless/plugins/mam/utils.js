@@ -18,6 +18,10 @@ export function onMAMError (iq) {
     }
 }
 
+export function isIntermediateMAMMessage (msg) {
+    return msg.get('is_archived') && msg.get('is_last_mam_result') === false;
+}
+
 /**
  * Handle returned IQ stanza containing Message Archive
  * Management (XEP-0313) preferences.
@@ -78,7 +82,7 @@ export async function handleMAMResult (model, result, query, options, should_pag
     await api.emojis.initialize();
     const is_muc = model.get('type') === _converse.CHATROOMS_TYPE;
     result.messages = result.messages.map(s =>
-        is_muc ? parseMUCMessage(s, model, _converse) : parseMessage(s, _converse)
+        is_muc ? parseMUCMessage(s, model, result) : parseMessage(s, result)
     );
 
     /**
