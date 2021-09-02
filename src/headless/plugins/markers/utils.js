@@ -74,6 +74,7 @@ export function addChatMarker (chat, message, by_jid, type='received') {
  * case it's considered already marked.
  * @param { (_converse.ChatBox|_converse.ChatRoom) } chat
  * @param { _converse.Message } message
+ * @returns { Boolean }
  */
 function isAlreadyMarked (chat, message) {
     const marker = chat.markers.find(m => Object.keys(m.get('marked_by')).includes(_converse.bare_jid));
@@ -211,6 +212,50 @@ export function handleUnreadMessage (chat, message) {
 }
 
 
+function getMarkerIdKey (chat) {
+    if (chat.get('type') === _converse.CHATROOMS_TYPE) {
+        return `stanza_id ${chat.get('jid')}`;
+    } else {
+        return 'msgid';
+    }
+}
+
+/**
+ * A {@link _converse.Marker} has a `marked_by` field which stores a mapping of
+ * JIDs to marker values ('received', 'displayed', 'acknowledged').
+ * This function is used to get the JID used as lookup key in the mapping.
+ *
+ * If the person marking is the current user, then we always want to store the
+ * bare real JID, regardless of whether the context is a MUC or a 1:1 chat.
+ * This is to faciliate easier lookups (see {@link isAlreadyMarked} and because
+ * (relevant to 1:1 chats), the full JID's resource is not permanent, and can
+ * change over sessions.
+ *
+ * For other persons marking, we store the bare JID in 1:1 chats and the MUC
+ * JID for MUCs.
+ *
+ * @param { (_converse.ChatBox|_converse.ChatRoom) } chat
+ * @param { MessageAttributes } attrs
+ * @returns { String }
+ */
+function getMarkerJID (chat, attrs) {
+    if (chat.get('type') === _converse.CHATROOMS_TYPE) {
+        const own_muc_jid = `${chat.get('jid')}/${chat.getOwnOccupant().get('nick')}`;
+        if (own_muc_jid === attrs.from) {
+            // For easier lookup, we always use our real bare jid, even in MUCs
+            return _converse.bare_jid;
+        } else {
+            // For other MUC users, we use their MUC jid
+            return attrs.from;
+        }
+    } else {
+        // For 1:1, we store the bare JID, to simplify lookups and since
+        // resources aren't permanent
+        return Strophe.getBareJidFromJid(attrs.from);
+    }
+}
+
+
 /**
  * Given an incoming message's attributes, check whether its a chat marker, and
  * if so, create a {@link _converse.ChatMarker}.
@@ -219,17 +264,19 @@ export function handleUnreadMessage (chat, message) {
  */
 export function handleChatMarker (data, handled) {
     const { attrs, model } = data;
-    const to_bare_jid = Strophe.getBareJidFromJid(attrs.to);
-    if (to_bare_jid !== _converse.bare_jid) {
+    if (!attrs.is_marker) {
         return handled;
     }
-    if (attrs.marker_id) {
-        const message = model.messages.findWhere({'msgid': attrs.marker_id});
-        message && addChatMarker(model, message, message.get('from'), message.get('marker'))
-        return true;
+    const key = getMarkerIdKey(model);
+    const message = model.messages.models.find(m => m.get(key) === attrs.marker_id);
+    if (!message || isAlreadyMarked(model, message)) {
+        return handled;
     }
-    return handled;
+    const by_jid = getMarkerJID(model, attrs);
+    addChatMarker(model, message, by_jid, attrs.marked)
+    return true;
 }
+
 
 /**
  * Handler for the `messageUpdate` event. The point here is to send a marker

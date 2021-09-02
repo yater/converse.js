@@ -133,7 +133,7 @@ export async function parseMessage (stanza, mamdata) {
      * @property { String } error_type - The type of error received from the server
      * @property { String } from - The sender JID
      * @property { String } fullname - The full name of the sender
-     * @property { String } marker - The XEP-0333 Chat Marker value
+     * @property { String } marked - The XEP-0333 Chat Marker value
      * @property { String } marker_id - The `id` attribute of a XEP-0333 chat marker
      * @property { String } msgid - The root `id` attribute of the stanza
      * @property { String } nick - The roster nickname of the sender
@@ -154,7 +154,6 @@ export async function parseMessage (stanza, mamdata) {
      * @property { String } type - The type of message
      */
     const delay = sizzle(`delay[xmlns="${Strophe.NS.DELAY}"]`, original_stanza).pop();
-    const marker = getChatMarker(stanza);
     const now = new Date().toISOString();
     let attrs = Object.assign(
         {
@@ -168,9 +167,7 @@ export async function parseMessage (stanza, mamdata) {
             'is_carbon': isCarbon(original_stanza),
             'is_delayed': !!delay,
             'is_markable': !!sizzle(`markable[xmlns="${Strophe.NS.MARKERS}"]`, stanza).length,
-            'is_marker': !!marker,
             'is_unstyled': !!sizzle(`unstyled[xmlns="${Strophe.NS.STYLING}"]`, stanza).length,
-            'marker_id': marker && marker.getAttribute('id'),
             'msgid': stanza.getAttribute('id') || original_stanza.getAttribute('id'),
             'nick': contact?.attributes?.nickname,
             'receipt_id': getReceiptId(stanza),
@@ -183,6 +180,7 @@ export async function parseMessage (stanza, mamdata) {
             'to': stanza.getAttribute('to'),
             'type': stanza.getAttribute('type')
         },
+        getChatMarker(stanza),
         getErrorAttributes(stanza),
         getOutOfBandAttributes(stanza),
         getSpoilerAttributes(stanza),

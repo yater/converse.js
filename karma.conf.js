@@ -28,6 +28,7 @@ module.exports = function(config) {
       { pattern: "src/headless/plugins/chat/tests/api.js", type: 'module' },
       { pattern: "src/headless/plugins/disco/tests/disco.js", type: 'module' },
       { pattern: "src/headless/plugins/markers/tests/markers.js", type: 'module' },
+      { pattern: "src/headless/plugins/markers/tests/muc-markers.js", type: 'module' },
       { pattern: "src/headless/plugins/muc/tests/affiliations.js", type: 'module' },
       { pattern: "src/headless/plugins/muc/tests/muc.js", type: 'module' },
       { pattern: "src/headless/plugins/muc/tests/pruning.js", type: 'module' },

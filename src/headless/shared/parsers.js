@@ -331,12 +331,18 @@ export function throwErrorIfInvalidForward (stanza) {
 export function getChatMarker (stanza) {
     // If we receive more than one marker (which shouldn't happen), we take
     // the highest level of acknowledgement.
-    return sizzle(`
+    const el = sizzle(`
         acknowledged[xmlns="${Strophe.NS.MARKERS}"],
         displayed[xmlns="${Strophe.NS.MARKERS}"],
         received[xmlns="${Strophe.NS.MARKERS}"]`,
         stanza
     ).pop();
+
+    return {
+        'is_marker': !!el,
+        'marked': el?.nodeName,
+        'marker_id': el?.getAttribute('id')
+    }
 }
 
 export function isHeadline (stanza) {

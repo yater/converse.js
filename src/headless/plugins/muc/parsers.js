@@ -119,7 +119,6 @@ export async function parseMUCMessage (stanza, chatbox, mamdata) {
     const delay = sizzle(`delay[xmlns="${Strophe.NS.DELAY}"]`, original_stanza).pop();
     const from = stanza.getAttribute('from');
     const nick = Strophe.unescapeNode(Strophe.getResourceFromJid(from));
-    const marker = getChatMarker(stanza);
     const now = new Date().toISOString();
     /**
      * @typedef { Object } MUCMessageAttributes
@@ -154,7 +153,7 @@ export async function parseMUCMessage (stanza, chatbox, mamdata) {
      * @property { String } from_muc - The JID of the MUC from which this message was sent
      * @property { String } from_real_jid - The real JID of the sender, if available
      * @property { String } fullname - The full name of the sender
-     * @property { String } marker - The XEP-0333 Chat Marker value
+     * @property { String } marked - The XEP-0333 Chat Marker value
      * @property { String } marker_id - The `id` attribute of a XEP-0333 chat marker
      * @property { String } moderated - The type of XEP-0425 moderation (if any) that was applied
      * @property { String } moderated_by - The JID of the user that moderated this message
@@ -193,9 +192,7 @@ export async function parseMUCMessage (stanza, chatbox, mamdata) {
             'is_delayed': !!delay,
             'is_headline': isHeadline(stanza),
             'is_markable': !!sizzle(`markable[xmlns="${Strophe.NS.MARKERS}"]`, stanza).length,
-            'is_marker': !!marker,
             'is_unstyled': !!sizzle(`unstyled[xmlns="${Strophe.NS.STYLING}"]`, stanza).length,
-            'marker_id': marker && marker.getAttribute('id'),
             'msgid': stanza.getAttribute('id') || original_stanza.getAttribute('id'),
             'receipt_id': getReceiptId(stanza),
             'received': new Date().toISOString(),
@@ -206,6 +203,7 @@ export async function parseMUCMessage (stanza, chatbox, mamdata) {
             'to': stanza.getAttribute('to'),
             'type': stanza.getAttribute('type')
         },
+        getChatMarker(stanza),
         getErrorAttributes(stanza),
         getOutOfBandAttributes(stanza),
         getSpoilerAttributes(stanza),

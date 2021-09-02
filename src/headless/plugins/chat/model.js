@@ -225,25 +225,44 @@ const ChatBox = ModelWithContact.extend({
             this.updateMessage(message, attrs);
             return;
         }
+
+        /**
+         * *Hook* which allows plugins to process an incoming message
+         * stanza *before* a {@link _converse.Message} is created.
+         *
+         * Return `true` in your listener if your processing has removed
+         * the need for creating a Message object (and respect a `true`
+         * result from other listeners).
+         *
+         * @event _converse#handleNewMessage
+         * @example
+         *  api.listen.on('handleNewMessage', (should_create_message) => {
+         *      if (isMarkerMessage()) {
+         *          createMarker();
+         *          return true;
+         *      }
+         *      return should_create_message;
+         *  });
+         */
         const handled = await api.hook('handleNewMessage', { 'model': this, attrs }, false);
-        if (handled) {
+        if (
+            handled ||
+            this.handleReceipt(attrs) ||
+            await this.handleRetraction(attrs)
+        ) {
+            this.notifications.set({'chat_state': null});
             return;
         }
 
-        if (
-            !this.handleReceipt(attrs) &&
-            !(await this.handleRetraction(attrs))
-        ) {
-            this.setEditable(attrs, attrs.time);
+        this.setEditable(attrs, attrs.time);
 
-            if (attrs['chat_state'] && attrs.sender === 'them') {
-                this.notifications.set('chat_state', attrs.chat_state);
-            }
-            if (u.shouldCreateMessage(attrs)) {
-                const msg = this.handleCorrection(attrs) || await this.createMessage(attrs);
-                this.notifications.set({'chat_state': null});
-                this.handleUnreadMessage(msg);
-            }
+        if (attrs['chat_state'] && attrs.sender === 'them') {
+            this.notifications.set('chat_state', attrs.chat_state);
+        }
+        if (u.shouldCreateMessage(attrs)) {
+            const msg = this.handleCorrection(attrs) || await this.createMessage(attrs);
+            this.notifications.set({'chat_state': null});
+            this.handleUnreadMessage(msg);
         }
     },
 
