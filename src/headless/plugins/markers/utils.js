@@ -83,10 +83,7 @@ function isAlreadyMarked (chat, message, type) {
         return false;
     }
     const current_type = marker.get('marked_by')[_converse.bare_jid];
-    return (
-        message.get('time') <= marker.get('time') &&
-        MARKER_TYPES[current_type] >= MARKER_TYPES[type]
-    );
+    return MARKER_TYPES[current_type] >= MARKER_TYPES[type];
 }
 
 
@@ -269,7 +266,7 @@ export function handleChatMarker (data, handled) {
     }
     const key = getMarkerIdKey(model);
     const message = model.messages.models.find(m => m.get(key) === attrs.marker_id);
-    if (!message || isAlreadyMarked(model, message, attrs.marked)) {
+    if (!message) {
         return handled;
     }
     const by_jid = getMarkerJID(model, attrs);

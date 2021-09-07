@@ -48,7 +48,7 @@ describe("A XEP-0333 Chat Marker", function () {
         expect(model.markers.length).toBe(1);
 
         const o = {};
-        o[_converse.bare_jid] = 'received';
+        o[_converse.bare_jid] = 'displayed';
         expect(model.markers.at(0).get('marked_by')).toEqual(o);
 
         model.save({'hidden': true});
