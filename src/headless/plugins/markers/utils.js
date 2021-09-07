@@ -74,11 +74,19 @@ export function addChatMarker (chat, message, by_jid, type='received') {
  * case it's considered already marked.
  * @param { (_converse.ChatBox|_converse.ChatRoom) } chat
  * @param { _converse.Message } message
+ * @param { ('received'|'displayed'|'acknowledged') } type
  * @returns { Boolean }
  */
-function isAlreadyMarked (chat, message) {
+function isAlreadyMarked (chat, message, type) {
     const marker = chat.markers.find(m => Object.keys(m.get('marked_by')).includes(_converse.bare_jid));
-    return !!(marker && (message.get('time') <= marker.get('time')));
+    if (!marker) {
+        return false;
+    }
+    const current_type = marker.get('marked_by')[_converse.bare_jid];
+    return (
+        message.get('time') <= marker.get('time') &&
+        MARKER_TYPES[current_type] >= MARKER_TYPES[type]
+    );
 }
 
 
@@ -118,13 +126,13 @@ export function sendMarkerForLastMessage (chat, type='received', force=false) {
     if (!msg) {
         return;
     }
-    if (isAlreadyMarked(chat, msg)) {
+    if (isAlreadyMarked(chat, msg, type)) {
         return;
     }
     if (msg.get('type') === 'groupchat') {
-        sendMarkerForMUCMessage(chat, msg, type) && addChatMarker(chat, msg, _converse.bare_jid);
+        sendMarkerForMUCMessage(chat, msg, type) && addChatMarker(chat, msg, _converse.bare_jid, type);
     } else {
-        sendMarkerForMessage(msg, type, force) && addChatMarker(chat, msg, _converse.bare_jid);
+        sendMarkerForMessage(msg, type, force) && addChatMarker(chat, msg, _converse.bare_jid, type);
     }
 }
 
@@ -164,18 +172,10 @@ export function sendMarkerForMUCMessage (chat, msg, type='received') {
     if (!Object.keys(MARKER_TYPES).includes(type)) {
         throw new TypeError('Invalid XEP-0333 chat marker type');
     }
-
     if (!msg || !api.settings.get('send_chat_markers').includes(type)) {
         return false;
     }
     if (msg?.get('is_markable')) {
-        const mid = getMessageIdToMark(msg);
-        if (chat.markers.get(mid)?.get('marked_by')?.[_converse.bare_jid] ?? -1 > MARKER_TYPES[type]) {
-            // Already marked, either by the same marker value or by a higher ranked one.
-            // https://xmpp.org/extensions/xep-0333.html#format
-            return false;
-        }
-
         // FIXME: first check whether XEP-0359 is supported, otherwise
         // <stanza-id> elements from the MUC must be considered as spoofed
         const key = `stanza_id ${chat.get('jid')}`;
@@ -200,14 +200,14 @@ export function sendMarkerForMUCMessage (chat, msg, type='received') {
  * @param { _converse.Message } message
  */
 export function handleUnreadMessage (chat, message) {
-    if (!message || !message?.get('body') || isIntermediateMAMMessage(message) || isAlreadyMarked(chat, message)) {
+    const type = chat.isHidden() ? 'received' : 'displayed';
+    if (!message || !message?.get('body') || isIntermediateMAMMessage(message) || isAlreadyMarked(chat, message, type)) {
         return
     }
-    const type = chat.isHidden() ? 'received' : 'displayed';
     if (message.get('type') === 'groupchat') {
-        sendMarkerForMUCMessage(chat, message, type) && addChatMarker(chat, message, _converse.bare_jid);
+        sendMarkerForMUCMessage(chat, message, type) && addChatMarker(chat, message, _converse.bare_jid, type);
     } else {
-        sendMarkerForMessage(message, type) && addChatMarker(chat, message, _converse.bare_jid);
+        sendMarkerForMessage(message, type) && addChatMarker(chat, message, _converse.bare_jid, type);
     }
 }
 
@@ -269,7 +269,7 @@ export function handleChatMarker (data, handled) {
     }
     const key = getMarkerIdKey(model);
     const message = model.messages.models.find(m => m.get(key) === attrs.marker_id);
-    if (!message || isAlreadyMarked(model, message)) {
+    if (!message || isAlreadyMarked(model, message, attrs.marked)) {
         return handled;
     }
     const by_jid = getMarkerJID(model, attrs);
@@ -293,32 +293,41 @@ export function handleChatMarker (data, handled) {
  * @param { _converse.Message } message
  */
 export function onMessageUpdated (chat, message) {
+    const type = chat.isHidden() ? 'received' : 'displayed';
     if (chat.get('type') !== _converse.CHATROOMS_TYPE ||
-            (message.get('sender') === 'me' && !api.settings.get('muc_send_markers_for_own_messages')) ||
-            isAlreadyMarked(chat, message)) {
+            message.get('sender') !== 'me' ||
+            !api.settings.get('muc_send_markers_for_own_messages') ||
+            isAlreadyMarked(chat, message, type)) {
         return;
     }
-    const type = chat.isHidden() ? 'received' : 'displayed';
-    sendMarkerForMUCMessage(chat, message, type) && addChatMarker(chat, message, _converse.bare_jid);
+    sendMarkerForMUCMessage(chat, message, type) && addChatMarker(chat, message, _converse.bare_jid, type);
 }
 
 
+/**
+ * Handler for the `clearUnreads` event which is fired when the unread messages
+ * counter for a chat has been cleared.
+ * This implies that the chat has become visible and there are no unread
+ * messages. So we send out a 'displayed' marker for the last message in the
+ * history.
+ * @param { (_converse.ChatBox|_converse.ChatRoom) } chat
+ */
 export function onUnreadsCleared (chat) {
-    const type = chat.isHidden() ? 'received' : 'displayed';
+    if (chat.isHidden()) {
+        return;
+    }
     if (chat.get('type') === _converse.CHATROOMS_TYPE) {
         if (chat.get('num_unread_general') > 0 || chat.get('num_unread') > 0 || chat.get('has_activity')) {
-            sendMarkerForLastMessage(chat, type);
+            sendMarkerForLastMessage(chat, 'displayed');
         }
-    } else {
-        if (chat.get('num_unread') > 0) {
-            sendMarkerForLastMessage(chat, type);
-        }
+    } else if (chat.get('num_unread') > 0) {
+        sendMarkerForLastMessage(chat, 'displayed');
     }
 }
 
 /**
  * Creates a ChatMarkers collection, set it on the chat and fetch any cached markers
- * @param { (_converse.ChatBox|_converse.ChatRoom) }
+ * @param { (_converse.ChatBox|_converse.ChatRoom) } model
  */
 export function initChatMarkers (model) {
     model.markers = new _converse.ChatMarkers();

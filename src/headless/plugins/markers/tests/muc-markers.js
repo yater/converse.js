@@ -154,8 +154,7 @@ describe("A XEP-0333 Chat Marker", function () {
         );
     }));
 
-
-    fit("may be restored from a MAM message",
+    it("may be restored from a MAM message",
         mock.initConverse(
             [], {
                 'allow_bookmarks': false, // Hack to get the rooms list to render
@@ -266,4 +265,71 @@ describe("A XEP-0333 Chat Marker", function () {
         }, 500);
         return p;
     }));
+
+    describe("of type 'displayed'", function () {
+
+        it("will be sent out when a chat becomes visible",
+            mock.initConverse(
+                [], {
+                    'allow_bookmarks': false, // Hack to get the rooms list to render
+                    'view_mode': 'fullscreen'},
+                async function (_converse) {
+
+            const nickname = 'romeo';
+            const muc_jid = 'lounge@montague.lit';
+            const model = await mock.openAndEnterChatRoom(_converse, muc_jid, nickname, [], [], true, {'hidden': true});
+
+            const sent_stanzas = [];
+            spyOn(_converse.connection, 'send').and.callFake(s => sent_stanzas.push(s?.nodeTree ?? s));
+            const message = u.toStanza(`
+                <message from="${muc_jid}/some1" type="groupchat">
+                    <delay xmlns="urn:xmpp:delay" stamp="2021-01-09T06:12:23Z"/>
+                    <body>1st MAM Message</body>
+                    <markable xmlns="urn:xmpp:chat-markers:0"></markable>
+                    <stanza-id xmlns="urn:xmpp:sid:0"
+                            id="first-message"
+                            by="lounge@montague.lit"/>
+            </message>`);
+            _converse.connection._dataRecv(mock.createRequest(message));
+            await u.waitUntil(() => model.messages.length);
+
+            let sent_messages = sent_stanzas.filter(s => s.nodeName === 'message');
+            expect(sent_messages.length).toBe(1);
+            expect(Strophe.serialize(sent_messages[0])).toBe(
+                `<message from="romeo@montague.lit/orchard" id="${sent_messages[0].getAttribute('id')}" to="lounge@montague.lit" type="groupchat" xmlns="jabber:client">`+
+                    `<received id="first-message" xmlns="urn:xmpp:chat-markers:0"/>`+
+                `</message>`);
+
+            await u.waitUntil(() => model.markers?.length);
+
+            expect(model.markers?.length).toBe(1);
+            const marker = model.markers.at(0);
+            const data = {};
+            data[_converse.bare_jid] = 'received';
+            expect(marker.get('marked_by')).toEqual(data);
+            expect(marker.get('time')).toBe('2021-01-09T06:12:23.000Z');
+
+            model.set('hidden', false);
+            await u.waitUntil(() => model.markers.at(0).get('marked_by')[_converse.bare_jid] === 'displayed');
+            expect(marker.get('time')).toBe('2021-01-09T06:12:23.000Z');
+
+            sent_messages = sent_stanzas.filter(s => s.nodeName === 'message');
+            expect(sent_messages.length).toBe(2);
+            expect(Strophe.serialize(sent_messages[1])).toBe(
+                `<message from="romeo@montague.lit/orchard" id="${sent_messages[1].getAttribute('id')}" to="lounge@montague.lit" type="groupchat" xmlns="jabber:client">`+
+                    `<displayed id="first-message" xmlns="urn:xmpp:chat-markers:0"/>`+
+                `</message>`);
+
+            // Check that a new marker isn't sent out again when chat goes
+            // hidden and then shown again.
+            model.set('hidden', true);
+            model.set('hidden', true);
+            const p = u.getOpenPromise();
+            setTimeout(() => {
+                expect(sent_stanzas.filter(s => s.nodeName === 'message').length).toBe(2);
+                p.resolve();
+            }, 100);
+            return p;
+        }));
+    });
 });
