@@ -24,17 +24,8 @@ export default BootstrapModal.extend({
     },
 
     toHTML () {
-        let placeholder = '';
-        if (!api.settings.get('locked_muc_domain')) {
-            const muc_domain = this.model.get('muc_domain') || api.settings.get('muc_domain');
-            placeholder = muc_domain ? `name@${muc_domain}` : __('name@conference.example.org');
-        }
         return tpl_add_muc(Object.assign(this.model.toJSON(), {
-            '_converse': _converse,
-            'label_room_address': api.settings.get('muc_domain') ? __('Groupchat name') :  __('Groupchat address'),
-            'chatroom_placeholder': placeholder,
             'muc_roomid_policy_error_msg': this.muc_roomid_policy_error_msg,
-            'muc_roomid_policy_hint': api.settings.get('muc_roomid_policy_hint')
         }));
     },
 
@@ -76,6 +67,12 @@ export default BootstrapModal.extend({
             jid = data.jid
             this.model.setDomain(jid);
         }
+
+        const roomconfig = {
+            'roomname': jid
+        }
+
+
         api.rooms.open(jid, Object.assign(data, {jid}), true);
         this.modal.hide();
         ev.target.reset();

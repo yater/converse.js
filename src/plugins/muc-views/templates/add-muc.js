@@ -19,6 +19,13 @@ const nickname_input = (o) => {
 
 
 export default (o) => {
+    let placeholder = '';
+    if (!api.settings.get('locked_muc_domain')) {
+        const muc_domain = this.model.get('muc_domain') || api.settings.get('muc_domain');
+        placeholder = muc_domain ? `name@${muc_domain}` : __('name@conference.example.org');
+    }
+    const muc_roomid_policy_hint = api.settings.get('muc_roomid_policy_hint');
+    const label_room_address = api.settings.get('muc_domain') ? __('Groupchat name') :  __('Groupchat address');
     const i18n_join = __('Join');
     const i18n_enter = __('Enter a new Groupchat');
     return html`
@@ -32,11 +39,11 @@ export default (o) => {
                     <span class="modal-alert"></span>
                     <form class="converse-form add-chatroom">
                         <div class="form-group">
-                            <label for="chatroom">${o.label_room_address}:</label>
+                            <label for="chatroom">${label_room_address}:</label>
                             ${ (o.muc_roomid_policy_error_msg) ? html`<label class="roomid-policy-error">${o.muc_roomid_policy_error_msg}</label>` : '' }
-                            <input type="text" required="required" name="chatroom" class="form-control roomjid-input" placeholder="${o.chatroom_placeholder}"/>
+                            <input type="text" required="required" name="chatroom" class="form-control roomjid-input" placeholder="${placeholder}"/>
                         </div>
-                        ${ o.muc_roomid_policy_hint ?  html`<div class="form-group">${unsafeHTML(DOMPurify.sanitize(o.muc_roomid_policy_hint, {'ALLOWED_TAGS': ['b', 'br', 'em']}))}</div>` : '' }
+                        ${ muc_roomid_policy_hint ?  html`<div class="form-group">${unsafeHTML(DOMPurify.sanitize(muc_roomid_policy_hint, {'ALLOWED_TAGS': ['b', 'br', 'em']}))}</div>` : '' }
                         ${ !api.settings.get('locked_muc_nickname') ? nickname_input(o) : '' }
                         <input type="submit" class="btn btn-primary" name="join" value="${i18n_join || ''}" ?disabled=${o.muc_roomid_policy_error_msg}>
                     </form>
