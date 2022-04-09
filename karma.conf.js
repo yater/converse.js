@@ -39,6 +39,7 @@ module.exports = function(config) {
       { pattern: "src/headless/plugins/smacks/tests/smacks.js", type: 'module' },
       { pattern: "src/headless/plugins/status/tests/status.js", type: 'module' },
       { pattern: "src/headless/shared/settings/tests/settings.js", type: 'module' },
+      { pattern: "src/headless/tests/connection.js", type: 'module' },
       { pattern: "src/headless/tests/converse.js", type: 'module' },
       { pattern: "src/headless/tests/eventemitter.js", type: 'module' },
       { pattern: "src/modals/tests/user-details-modal.js", type: 'module' },

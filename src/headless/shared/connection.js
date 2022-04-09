@@ -36,23 +36,45 @@ export class Connection extends Strophe.Connection {
         super.bind();
     }
 
-
-    async onDomainDiscovered (response) {
+    async onDomainDiscoveredViaXML (response) {
         const text = await response.text();
         const xrd = (new window.DOMParser()).parseFromString(text, "text/xml").firstElementChild;
         if (xrd.nodeName != "XRD" || xrd.namespaceURI != "http://docs.oasis-open.org/ns/xri/xrd-1.0") {
-            return log.warn("Could not discover XEP-0156 connection methods");
+            return log.warn("Could not discover XEP-0156 connection method from host-meta response");
         }
-        const bosh_links = sizzle(`Link[rel="urn:xmpp:alt-connections:xbosh"]`, xrd);
-        const ws_links = sizzle(`Link[rel="urn:xmpp:alt-connections:websocket"]`, xrd);
-        const bosh_methods = bosh_links.map(el => el.getAttribute('href'));
-        const ws_methods = ws_links.map(el => el.getAttribute('href'));
-        if (bosh_methods.length === 0 && ws_methods.length === 0) {
-            log.warn("Neither BOSH nor WebSocket connection methods have been specified with XEP-0156.");
+        const bosh_hrefs = sizzle(`Link[rel="${Strophe.NS.ALTCONN}:xbosh"]`, xrd)
+            .map(el => el.getAttribute('href'));
+
+        const ws_hrefs = sizzle(`Link[rel="${Strophe.NS.ALTCONN}:websocket"]`, xrd)
+            .map(el => el.getAttribute('href'));
+
+        if (bosh_hrefs.length === 0 && ws_hrefs.length === 0) {
+            return log.warn("Could not discover XEP-0156 connection method from host-meta response");
         } else {
             // TODO: support multiple endpoints
-            api.settings.set("websocket_url", ws_methods.pop());
-            api.settings.set('bosh_service_url', bosh_methods.pop());
+            api.settings.set("websocket_url", ws_hrefs.pop());
+            api.settings.set('bosh_service_url', bosh_hrefs.pop());
+            this.service = api.settings.get("websocket_url") || api.settings.get('bosh_service_url');
+            this.setProtocol();
+        }
+    }
+
+    async onDomainDiscoveredViaJSON (response) {
+        const text = await response.text();
+        const { links } = JSON.parse(text);
+        if (!links || links?.length === 0) {
+            return log.warn("Could not discover XEP-0156 connection method from host-meta.json response");
+        }
+
+        const bosh_links = links.filter(l => l.rel === `${Strophe.NS.ALTCONN}:xbosh` && l.href);
+        const ws_links = links.filter(l => l.rel === `S{Strophe.NS.ALTCONN}:websocket` && l.href);
+
+        if (bosh_links.length === 0 && ws_links.length === 0) {
+            return log.warn("Could not discover XEP-0156 connection method from host-meta.json response");
+        } else {
+            // TODO: support multiple endpoints
+            api.settings.set("websocket_url", ws_links.pop().href);
+            api.settings.set('bosh_service_url', bosh_links.pop().href);
             this.service = api.settings.get("websocket_url") || api.settings.get('bosh_service_url');
             this.setProtocol();
         }
@@ -66,27 +88,23 @@ export class Connection extends Strophe.Connection {
      * @method Connnection.discoverConnectionMethods
      */
     async discoverConnectionMethods (domain) {
-        // Use XEP-0156 to check whether this host advertises websocket or BOSH connection methods.
         const options = {
             'mode': 'cors',
-            'headers': {
-                'Accept': 'application/xrd+xml, text/xml'
-            }
+            'headers': { 'Accept': 'application/xrd+xml, text/xml' }
         };
         const url = `https://${domain}/.well-known/host-meta`;
-        let response;
-        try {
-            response = await fetch(url, options);
-        } catch (e) {
-            log.error(`Failed to discover alternative connection methods at ${url}`);
-            log.error(e);
-            return;
+        let response = await fetch(url, options).catch((e) => log.warn(e));
+        if (response?.status >= 200 && response?.status < 400) {
+            return this.onDomainDiscoveredViaXML(response);
         }
-        if (response.status >= 200 && response.status < 400) {
-            await this.onDomainDiscovered(response);
-        } else {
-            log.warn("Could not discover XEP-0156 connection methods");
+
+        options.headers = { 'Accept': 'application/json' };
+        response = await fetch(url+'.json', options).catch((e) => log.warn(e));
+        if (response?.status >= 200 && response?.status < 400) {
+            return this.onDomainDiscoveredViaJSON(response);
         }
+
+        log.warn(`Failed to discover alternative connection method at ${url}`);
     }
 
     /**

@@ -44,6 +44,7 @@ dayjs.extend(advancedFormat);
 
 // Add Strophe Namespaces
 Strophe.addNamespace('ACTIVITY', 'http://jabber.org/protocol/activity');
+Strophe.addNamespace('ALTCONN', 'urn:xmpp:alt-connections:xbosh');
 Strophe.addNamespace('CARBONS', 'urn:xmpp:carbons:2');
 Strophe.addNamespace('CHATSTATES', 'http://jabber.org/protocol/chatstates');
 Strophe.addNamespace('CSI', 'urn:xmpp:csi:0');

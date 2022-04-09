@@ -1290,7 +1290,7 @@ muc_domain
 
 The default MUC (multi-user chat) domain that should be used.
 
-When setting this value, users can only enter the name when opening a new MUC,
+When setting this value, users can enter only the name when opening a new MUC,
 and don't have to add the whole address (i.e. including the domain part).
 
 Users can however still enter the domain and they can still open MUCs with
