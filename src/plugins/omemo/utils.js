@@ -262,8 +262,9 @@ export function handleEncryptedFiles (richtext) {
  */
 export async function parseEncryptedMessage (stanza, attrs) {
     if (api.settings.get('clear_cache_on_logout') ||
-            !attrs.is_encrypted ||
-            attrs.encryption_namespace !== Strophe.NS.OMEMO) {
+        !attrs.is_encrypted ||
+        attrs.encryption_namespace !== Strophe.NS.OMEMO) {
+
         return attrs;
     }
     const encrypted_el = sizzle(`encrypted[xmlns="${Strophe.NS.OMEMO}"]`, stanza).pop();
@@ -399,6 +400,7 @@ async function decryptPrekeyWhisperMessage (attrs) {
         // sender this way, the invalid session of the original
         // sender will get overwritten with this newly created,
         // valid session.
+        log.error(`Could not decrypt prekey message from ${attrs.from}`);
         log.error(`${e.name} ${e.message}`);
         return Object.assign(attrs, getDecryptionErrorAttributes(e));
     }
@@ -415,13 +417,14 @@ async function decryptPrekeyWhisperMessage (attrs) {
         await _converse.omemo_store.generateMissingPreKeys();
         await _converse.omemo_store.publishBundle();
         if (plaintext) {
-            return Object.assign(attrs, { 'plaintext': plaintext });
+            return { ...attrs, ...{ plaintext } };
         } else {
-            return Object.assign(attrs, { 'is_only_key': true });
+            return { ...attrs, ...{ 'is_only_key': true } };
         }
     } catch (e) {
+        log.error(`Error while processing decrypted prekey message from ${attrs.from}`);
         log.error(`${e.name} ${e.message}`);
-        return Object.assign(attrs, getDecryptionErrorAttributes(e));
+        return { ...attrs, ...getDecryptionErrorAttributes(e) };
     }
 }
 
@@ -432,8 +435,9 @@ async function decryptWhisperMessage (attrs) {
     try {
         const key_and_tag = await session_cipher.decryptWhisperMessage(key, 'binary');
         const plaintext = await handleDecryptedWhisperMessage(attrs, key_and_tag);
-        return Object.assign(attrs, { 'plaintext': plaintext });
+        return Object.assign(attrs, { plaintext });
     } catch (e) {
+        log.error(`Could not decrypt message from ${attrs.from}`);
         log.error(`${e.name} ${e.message}`);
         return Object.assign(attrs, getDecryptionErrorAttributes(e));
     }
