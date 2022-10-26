@@ -2,6 +2,7 @@
 
 ## 10.0.0 (Unreleased)
 
+- Embed the Spotify player for links to Spotify tracks
 - Don't automatically convert OpenStreetMap URLs into `geo:` URIs in sent messages
 - Remove the `allow_chat_pending_contacts` config option.
 - Show roster contacts with `subscription` set to `none`
@@ -24,6 +25,8 @@
 - #3007: Fix links becoming text when a message is edited
 - #3018: Fix MUC icons not functioning.
 - #3028: Fix encrypted media from Conversations/Quicksy not properly decrypting
+
+- New config option [embed-3rd-party-media-players](https://conversejs.org/docs/html/configuration.html#embed-3rd-party-media-players)
 
 
 ## 9.1.1 (2022-05-05)
