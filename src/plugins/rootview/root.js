@@ -1,5 +1,5 @@
 import tpl_root from "./templates/root.js";
-import { api } from '@converse/headless/core';
+import { _converse, api } from '@converse/headless/core.js';
 import { CustomElement } from 'shared/components/element.js';
 import { getAppSettings } from '@converse/headless/shared/settings/utils.js';
 import { getTheme } from './utils.js';
@@ -35,6 +35,14 @@ export default class ConverseRoot extends CustomElement {
         this.classList.add('conversejs');
         this.classList.add(`converse-${api.settings.get('view_mode')}`);
         this.classList.add(`theme-${getTheme()}`);
+
+        const rtl_langs = "ar, fa, he, ur";
+        if (rtl_langs.includes(_converse.locale)) {
+            this.setAttribute('dir', 'rtl');
+        } else {
+            this.setAttribute('dir', 'ltr');
+        }
+
         this.requestUpdate();
     }
 }

@@ -147,7 +147,6 @@
                 }
                 span, input[name=username] {
                     display: table-cell;
-                    text-align: left;
                 }
             }
             .instructions {
@@ -305,7 +304,7 @@
         .controlbox-subtitle {
             font-size: 90%;
             padding: 0.5em;
-            text-align: right;
+            text-align: end;
         }
 
         .controlbox-pane {
@@ -313,7 +312,7 @@
             border: 0;
             font-size: var(--font-size);
             left: 0;
-            text-align: left;
+            text-align: start;
             overflow-x: hidden;
             padding: 0 0 1em 0;
 
